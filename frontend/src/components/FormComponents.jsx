@@ -41,15 +41,20 @@ export const getCurrentTime = () => {
 }
 
 // Form Header Component
-export const FormHeader = ({ title, gradient = 'from-ccfs-primary to-ccfs-secondary' }) => (
-  <div className={`bg-gradient-to-r ${gradient} text-white p-4 sticky top-0 z-10`}>
-    <div className="flex items-center gap-3">
-      <Link to="/" className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-        <ArrowLeft className="w-6 h-6" />
-      </Link>
-      <h1 className="text-xl font-bold">{title}</h1>
+export const FormHeader = ({ title, gradient = 'from-blue-600 to-blue-700' }) => (
+  <header className="bg-blue-600 text-white sticky top-0 z-10 shadow-sm">
+    <div className="px-4 sm:px-6 lg:px-8">
+      <div className="flex items-center h-14 gap-3">
+        <Link to="/" className="p-2 hover:bg-blue-500 rounded-md transition-colors">
+          <ArrowLeft className="w-6 h-6" />
+        </Link>
+        <div className="flex items-center gap-3">
+          <img src="/ccfs-logo-white.png" alt="CCFS Logo" className="h-8" />
+          <h1 className="text-xl font-semibold">{title}</h1>
+        </div>
+      </div>
     </div>
-  </div>
+  </header>
 )
 
 // Text Input Component

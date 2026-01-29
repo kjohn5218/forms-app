@@ -2,9 +2,9 @@ const Joi = require('joi')
 
 const TERMINALS = [
   'ABQ', 'BIL', 'BIS', 'BOI', 'BTM', 'BYI', 'BZN', 'CPR', 'DEN', 'DFW',
-  'DIK', 'DRO', 'DSM', 'DUL', 'ELP', 'FAR', 'GAR', 'GFK', 'GJT', 'GRI',
-  'GTF', 'HAY', 'HLN', 'HOU', 'IDA', 'KCY', 'KSP', 'LAS', 'MOT', 'MSO',
-  'MSP', 'NCS', 'NPL', 'OMA', 'PHX', 'PIE', 'PUB', 'RNO', 'ROW', 'RPC',
+  'DIK', 'DOD', 'DRO', 'DSM', 'DUL', 'ELP', 'FAR', 'GAR', 'GFK', 'GJT', 'GRI',
+  'GTF', 'HAY', 'HLN', 'HLN LIQUOR DI', 'HOU', 'IDA', 'KCY', 'KSP', 'LAS', 'LQR',
+  'MOT', 'MSO', 'MSP', 'NCS', 'NPL', 'OMA', 'PHX', 'PIE', 'PUB', 'RNO', 'ROW', 'RPC',
   'SAL', 'SAT', 'SCB', 'SGF', 'SGU', 'SLC', 'STL', 'SXF', 'TUS', 'WIC', 'WTT'
 ]
 
@@ -305,6 +305,52 @@ const schemas = {
     followUpDate: Joi.string().allow('').optional(),
     traineeSignature: Joi.string().required(),
     trainerSignature: Joi.string().required()
+  }),
+
+  'red-binder-checklist': Joi.object({
+    submissionId: Joi.string().required(),
+    terminal: Joi.string().required(),
+    date: Joi.string().required(),
+    firstName: Joi.string().required(),
+    lastName: Joi.string().required(),
+    inspectorEmail: Joi.string().email().required(),
+    truckNumber: Joi.string().allow('').optional(),
+    otherTruckNumber: Joi.string().allow('').optional(),
+    checklist: Joi.object().required(),
+    westRegion: Joi.object().optional(),
+    southRegion: Joi.object().optional(),
+    eastRegion: Joi.object().optional(),
+    notes: Joi.string().allow('').optional()
+  }),
+
+  'selection-grade-road-test': Joi.object({
+    ...baseSchema,
+    driverName: Joi.string().required(),
+    employeeId: Joi.string().allow('').optional(),
+    hiringTerminal: Joi.string().valid(...TERMINALS).required(),
+    evaluationDate: Joi.string().required(),
+    drivingExperience: Joi.string().required(),
+    vehicleType: Joi.string().required(),
+    truckNumber: Joi.string().required(),
+    trailerNumber: Joi.string().allow('').optional(),
+    weatherConditions: Joi.string().required(),
+    trafficConditions: Joi.string().required(),
+    routeType: Joi.string().required(),
+    evaluatorName: Joi.string().required(),
+    evaluatorTitle: Joi.string().required(),
+    phase1: Joi.object().optional(),
+    phase2: Joi.object().optional(),
+    phase3: Joi.object().optional(),
+    phase4: Joi.object().optional(),
+    finalScore: Joi.number().min(0).max(100).allow('').optional(),
+    passFailStatus: Joi.string().valid('Pass', 'Fail').required(),
+    comment1: Joi.string().min(10).required(),
+    comment2: Joi.string().min(10).required(),
+    comment3: Joi.string().min(10).required(),
+    evaluatorSignature: Joi.string().required(),
+    driverSignature: Joi.string().required(),
+    certificationDate: Joi.string().allow('').optional(),
+    certificationNotes: Joi.string().allow('').optional()
   })
 }
 

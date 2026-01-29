@@ -13,7 +13,9 @@ import {
   Building2,
   Shield,
   Fuel,
-  GraduationCap
+  GraduationCap,
+  BookOpen,
+  ClipboardList
 } from 'lucide-react'
 
 const formCards = [
@@ -100,6 +102,18 @@ const formCards = [
     route: '/pre-trip-training',
     icon: GraduationCap,
     gradient: 'from-violet-500 to-violet-600'
+  },
+  {
+    title: 'Red Binder Checklist',
+    route: '/red-binder-checklist',
+    icon: BookOpen,
+    gradient: 'from-red-700 to-red-800'
+  },
+  {
+    title: 'Selection Grade Road Test',
+    route: '/selection-grade-road-test',
+    icon: ClipboardList,
+    gradient: 'from-sky-500 to-sky-600'
   }
 ]
 
@@ -107,15 +121,19 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
-      <div className="bg-ccfs-primary text-white p-4 shadow-lg">
-        <div className="flex items-center justify-center gap-3">
-          <img src="/ccfs-logo.png" alt="CCFS Logo" className="h-10 w-auto" onError={(e) => e.target.style.display = 'none'} />
-          <div className="text-center">
-            <h1 className="text-2xl font-bold">CCFS Forms</h1>
-            <p className="text-sm text-white/80">Safety & Compliance</p>
+      <header className="bg-blue-600 shadow-sm">
+        <div className="px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-14">
+            <div className="flex items-center">
+              <img src="/ccfs-logo-white.png" alt="CCFS Logo" className="h-10 mr-3" />
+              <div>
+                <h1 className="text-xl font-semibold text-white">CCFS Forms</h1>
+                <p className="text-xs text-white/80 hidden sm:block">Safety & Compliance</p>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Form Cards Grid */}
       <div className="p-4">

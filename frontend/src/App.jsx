@@ -15,6 +15,8 @@ import FleetManagement from './pages/FleetManagement'
 import CVSARoadCheckPrep from './pages/CVSARoadCheckPrep'
 import FuelCardReceipt from './pages/FuelCardReceipt'
 import PreTripTraining from './pages/PreTripTraining'
+import RedBinderChecklist from './pages/RedBinderChecklist'
+import SelectionGradeRoadTest from './pages/SelectionGradeRoadTest'
 
 function App() {
   return (
@@ -37,6 +39,8 @@ function App() {
           <Route path="/cvsa-road-check-prep" element={<CVSARoadCheckPrep />} />
           <Route path="/fuel-card-receipt" element={<FuelCardReceipt />} />
           <Route path="/pre-trip-training" element={<PreTripTraining />} />
+          <Route path="/red-binder-checklist" element={<RedBinderChecklist />} />
+          <Route path="/selection-grade-road-test" element={<SelectionGradeRoadTest />} />
         </Routes>
       </div>
     </Router>

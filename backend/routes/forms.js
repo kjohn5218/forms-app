@@ -35,6 +35,10 @@ const getSubmittedBy = (formType, data) => {
       return data.driverName
     case 'pre-trip-training':
       return data.trainerName
+    case 'red-binder-checklist':
+      return `${data.firstName} ${data.lastName}`
+    case 'selection-grade-road-test':
+      return data.evaluatorName
     default:
       return 'Unknown'
   }
@@ -111,7 +115,9 @@ const formTypes = [
   'fleet-management',
   'cvsa-road-check-prep',
   'fuel-card-receipt',
-  'pre-trip-training'
+  'pre-trip-training',
+  'red-binder-checklist',
+  'selection-grade-road-test'
 ]
 
 // Register routes
