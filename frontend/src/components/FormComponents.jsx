@@ -49,7 +49,7 @@ export const FormHeader = ({ title, gradient = 'from-blue-600 to-blue-700' }) =>
           <ArrowLeft className="w-6 h-6" />
         </Link>
         <div className="flex items-center gap-3">
-          <img src="/ccfs-logo-white.png" alt="CCFS Logo" className="h-8" />
+          <img src="/ccfs-logo.jpg" alt="CCFS Logo" className="h-8" />
           <h1 className="text-xl font-semibold">{title}</h1>
         </div>
       </div>

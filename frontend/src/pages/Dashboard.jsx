@@ -125,7 +125,7 @@ const Dashboard = () => {
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-14">
             <div className="flex items-center">
-              <img src="/ccfs-logo-white.png" alt="CCFS Logo" className="h-10 mr-3" />
+              <img src="/ccfs-logo.jpg" alt="CCFS Logo" className="h-10 mr-3" />
               <div>
                 <h1 className="text-xl font-semibold text-white">CCFS Forms</h1>
                 <p className="text-xs text-white/80 hidden sm:block">Safety & Compliance</p>
