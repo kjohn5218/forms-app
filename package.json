@@ -1,0 +1,16 @@
+{
+  "name": "ccfs-forms",
+  "version": "1.0.0",
+  "description": "CCFS LTL Logistics Safety and Compliance Forms Application",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && node server.js",
+    "build": "cd frontend && npm run build",
+    "start": "cd backend && node server.js",
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
