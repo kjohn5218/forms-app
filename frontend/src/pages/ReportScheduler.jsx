@@ -14,7 +14,22 @@ import {
   FileText,
   Table,
   Building2,
-  X
+  X,
+  ClipboardCheck,
+  AlertTriangle,
+  Eye,
+  Package,
+  FileSearch,
+  Award,
+  Building,
+  AlertCircle,
+  Truck,
+  Wrench,
+  Shield,
+  Fuel,
+  GraduationCap,
+  BookOpen,
+  ClipboardList
 } from 'lucide-react'
 import { TERMINALS } from '../components/FormComponents'
 
@@ -28,6 +43,25 @@ const DAYS_OF_WEEK = [
   { value: 6, label: 'Saturday' }
 ]
 
+const REPORT_TYPES = [
+  { value: 'forklift-inspection', label: 'Forklift Inspection', icon: ClipboardCheck, available: true },
+  { value: 'safety-event', label: 'Safety Event', icon: AlertTriangle, available: false },
+  { value: 'observation', label: 'Observation Forms', icon: Eye, available: false },
+  { value: 'load-quality-exception', label: 'Load Quality Exception', icon: Package, available: false },
+  { value: 'dvir-audit', label: 'DVIR Audit', icon: FileSearch, available: false },
+  { value: 'forklift-operator-evaluation', label: 'Forklift Operator Evaluation', icon: Award, available: false },
+  { value: 'terminal-inspection', label: 'Terminal Inspection', icon: Building, available: false },
+  { value: 'hazard-report', label: 'Hazard Report', icon: AlertCircle, available: false },
+  { value: 'driver-ride-along', label: 'Driver Ride Along', icon: Truck, available: false },
+  { value: 'shop-inspection', label: 'Shop Inspection', icon: Wrench, available: false },
+  { value: 'fleet-management', label: 'Fleet Management Audit', icon: Building2, available: false },
+  { value: 'cvsa-road-check-prep', label: 'CVSA Road Check Prep', icon: Shield, available: false },
+  { value: 'fuel-card-receipt', label: 'Fuel Card Receipt', icon: Fuel, available: false },
+  { value: 'pre-trip-training', label: 'Pre-Trip Training', icon: GraduationCap, available: false },
+  { value: 'red-binder-checklist', label: 'Red Binder Checklist', icon: BookOpen, available: false },
+  { value: 'selection-grade-road-test', label: 'Selection Grade Road Test', icon: ClipboardList, available: false }
+]
+
 const ReportScheduler = () => {
   const [schedules, setSchedules] = useState([])
   const [loading, setLoading] = useState(true)
@@ -38,11 +72,13 @@ const ReportScheduler = () => {
   // Form state
   const [formData, setFormData] = useState({
     name: '',
+    report_type: 'forklift-inspection',
     frequency: 'weekly',
     day_of_week: 1,
     day_of_month: 1,
     time: '08:00',
     terminal: '',
+    include_failures_only: false,
     recipients: [''],
     format: 'pdf'
   })
@@ -68,11 +104,13 @@ const ReportScheduler = () => {
   const resetForm = () => {
     setFormData({
       name: '',
+      report_type: 'forklift-inspection',
       frequency: 'weekly',
       day_of_week: 1,
       day_of_month: 1,
       time: '08:00',
       terminal: '',
+      include_failures_only: false,
       recipients: [''],
       format: 'pdf'
     })
@@ -87,11 +125,13 @@ const ReportScheduler = () => {
   const openEditForm = (schedule) => {
     setFormData({
       name: schedule.name,
+      report_type: schedule.report_type || 'forklift-inspection',
       frequency: schedule.frequency,
       day_of_week: schedule.day_of_week || 1,
       day_of_month: schedule.day_of_month || 1,
       time: schedule.time,
       terminal: schedule.terminal || '',
+      include_failures_only: schedule.include_failures_only || false,
       recipients: schedule.recipients.length > 0 ? schedule.recipients : [''],
       format: schedule.format
     })
@@ -262,6 +302,16 @@ const ReportScheduler = () => {
     })
   }
 
+  const getReportTypeLabel = (value) => {
+    const type = REPORT_TYPES.find(t => t.value === value)
+    return type ? type.label : value
+  }
+
+  const getReportTypeIcon = (value) => {
+    const type = REPORT_TYPES.find(t => t.value === value)
+    return type ? type.icon : ClipboardCheck
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -273,11 +323,11 @@ const ReportScheduler = () => {
   return (
     <div className="min-h-screen bg-gray-100 pb-20">
       {/* Header */}
-      <header className="bg-gradient-to-r from-gray-700 to-gray-800 shadow-lg sticky top-0 z-50">
+      <header className="bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg sticky top-0 z-50">
         <div className="px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Link to="/" className="text-white/80 hover:text-white">
+              <Link to="/reports" className="text-white/80 hover:text-white">
                 <ArrowLeft className="w-6 h-6" />
               </Link>
               <Calendar className="w-8 h-8 text-white" />
@@ -288,7 +338,7 @@ const ReportScheduler = () => {
             </div>
             <button
               onClick={openCreateForm}
-              className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
+              className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors"
             >
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">New Schedule</span>
@@ -303,7 +353,7 @@ const ReportScheduler = () => {
           <div className="bg-white rounded-xl p-8 shadow text-center">
             <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-700 mb-2">No Scheduled Reports</h3>
-            <p className="text-gray-500 mb-4">Create a schedule to automatically receive forklift inspection reports via email.</p>
+            <p className="text-gray-500 mb-4">Create a schedule to automatically receive reports via email.</p>
             <button
               onClick={openCreateForm}
               className="inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
@@ -314,82 +364,97 @@ const ReportScheduler = () => {
           </div>
         ) : (
           <div className="space-y-3">
-            {schedules.map(schedule => (
-              <div
-                key={schedule.id}
-                className={`bg-white rounded-xl p-4 shadow ${!schedule.is_active ? 'opacity-60' : ''}`}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h3 className="font-semibold text-gray-800">{schedule.name}</h3>
-                    <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
-                      <Clock className="w-4 h-4" />
-                      <span>{formatFrequency(schedule)}</span>
+            {schedules.map(schedule => {
+              const ReportIcon = getReportTypeIcon(schedule.report_type)
+              return (
+                <div
+                  key={schedule.id}
+                  className={`bg-white rounded-xl p-4 shadow ${!schedule.is_active ? 'opacity-60' : ''}`}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-gray-100 rounded-lg">
+                        <ReportIcon className="w-5 h-5 text-gray-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-gray-800">{schedule.name}</h3>
+                        <p className="text-sm text-gray-500">{getReportTypeLabel(schedule.report_type)}</p>
+                        <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+                          <Clock className="w-4 h-4" />
+                          <span>{formatFrequency(schedule)}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleToggleActive(schedule)}
+                        className={`px-2 py-1 rounded text-xs font-medium ${
+                          schedule.is_active
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-gray-100 text-gray-500'
+                        }`}
+                      >
+                        {schedule.is_active ? 'Active' : 'Inactive'}
+                      </button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+
+                  <div className="grid grid-cols-2 gap-3 text-sm mb-3">
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <Building2 className="w-4 h-4 text-gray-400" />
+                      <span>{schedule.terminal || 'All Terminals'}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-600">
+                      {schedule.format === 'pdf' && <FileText className="w-4 h-4 text-gray-400" />}
+                      {schedule.format === 'excel' && <Table className="w-4 h-4 text-gray-400" />}
+                      {schedule.format === 'both' && <FileText className="w-4 h-4 text-gray-400" />}
+                      <span className="capitalize">{schedule.format === 'both' ? 'PDF & Excel' : schedule.format.toUpperCase()}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-600">
+                      <Mail className="w-4 h-4 text-gray-400" />
+                      <span>{schedule.recipients.length} recipient(s)</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-gray-600">
+                      {schedule.last_run_status === 'success' && <CheckCircle className="w-4 h-4 text-green-500" />}
+                      {schedule.last_run_status === 'failed' && <XCircle className="w-4 h-4 text-red-500" />}
+                      {!schedule.last_run_status && <Clock className="w-4 h-4 text-gray-400" />}
+                      <span>Last: {formatLastRun(schedule)}</span>
+                    </div>
+                  </div>
+
+                  {schedule.include_failures_only && (
+                    <div className="mb-3">
+                      <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">Failures Only</span>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2 pt-3 border-t">
                     <button
-                      onClick={() => handleToggleActive(schedule)}
-                      className={`px-2 py-1 rounded text-xs font-medium ${
-                        schedule.is_active
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-gray-100 text-gray-500'
-                      }`}
+                      onClick={() => handleSendTest(schedule.id)}
+                      disabled={sendingTest === schedule.id}
+                      className="flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
                     >
-                      {schedule.is_active ? 'Active' : 'Inactive'}
+                      <Play className="w-4 h-4" />
+                      {sendingTest === schedule.id ? 'Sending...' : 'Send Now'}
+                    </button>
+                    <button
+                      onClick={() => openEditForm(schedule)}
+                      className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(schedule.id)}
+                      className="flex items-center gap-1 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors ml-auto"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete
                     </button>
                   </div>
                 </div>
-
-                <div className="grid grid-cols-2 gap-3 text-sm mb-3">
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Building2 className="w-4 h-4 text-gray-400" />
-                    <span>{schedule.terminal || 'All Terminals'}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-600">
-                    {schedule.format === 'pdf' && <FileText className="w-4 h-4 text-gray-400" />}
-                    {schedule.format === 'excel' && <Table className="w-4 h-4 text-gray-400" />}
-                    {schedule.format === 'both' && <FileText className="w-4 h-4 text-gray-400" />}
-                    <span className="capitalize">{schedule.format === 'both' ? 'PDF & Excel' : schedule.format.toUpperCase()}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-600">
-                    <Mail className="w-4 h-4 text-gray-400" />
-                    <span>{schedule.recipients.length} recipient(s)</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-gray-600">
-                    {schedule.last_run_status === 'success' && <CheckCircle className="w-4 h-4 text-green-500" />}
-                    {schedule.last_run_status === 'failed' && <XCircle className="w-4 h-4 text-red-500" />}
-                    {!schedule.last_run_status && <Clock className="w-4 h-4 text-gray-400" />}
-                    <span>Last: {formatLastRun(schedule)}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 pt-3 border-t">
-                  <button
-                    onClick={() => handleSendTest(schedule.id)}
-                    disabled={sendingTest === schedule.id}
-                    className="flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    <Play className="w-4 h-4" />
-                    {sendingTest === schedule.id ? 'Sending...' : 'Send Now'}
-                  </button>
-                  <button
-                    onClick={() => openEditForm(schedule)}
-                    className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(schedule.id)}
-                    className="flex items-center gap-1 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors ml-auto"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
@@ -418,9 +483,27 @@ const ReportScheduler = () => {
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                   className="w-full border rounded-lg px-3 py-2"
-                  placeholder="e.g., Weekly Safety Report"
+                  placeholder="e.g., Weekly Forklift Report"
                   required
                 />
+              </div>
+
+              {/* Report Type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Report Type *
+                </label>
+                <select
+                  value={formData.report_type}
+                  onChange={(e) => setFormData(prev => ({ ...prev, report_type: e.target.value }))}
+                  className="w-full border rounded-lg px-3 py-2"
+                >
+                  {REPORT_TYPES.map(type => (
+                    <option key={type.value} value={type.value} disabled={!type.available}>
+                      {type.label}{!type.available ? ' (Coming Soon)' : ''}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Frequency */}
@@ -488,21 +571,44 @@ const ReportScheduler = () => {
                 />
               </div>
 
-              {/* Terminal Filter */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Terminal (optional)
-                </label>
-                <select
-                  value={formData.terminal}
-                  onChange={(e) => setFormData(prev => ({ ...prev, terminal: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2"
-                >
-                  <option value="">All Terminals</option>
-                  {TERMINALS.map(t => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
+              {/* Report Criteria Section */}
+              <div className="border-t pt-4">
+                <h3 className="text-sm font-medium text-gray-700 mb-3">Report Criteria</h3>
+
+                {/* Terminal Filter */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Terminal
+                  </label>
+                  <select
+                    value={formData.terminal}
+                    onChange={(e) => setFormData(prev => ({ ...prev, terminal: e.target.value }))}
+                    className="w-full border rounded-lg px-3 py-2"
+                  >
+                    <option value="">All Terminals</option>
+                    {TERMINALS.map(t => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Forklift-specific criteria */}
+                {formData.report_type === 'forklift-inspection' && (
+                  <div className="mb-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.include_failures_only}
+                        onChange={(e) => setFormData(prev => ({ ...prev, include_failures_only: e.target.checked }))}
+                        className="w-4 h-4 text-blue-600 rounded"
+                      />
+                      <span className="text-sm text-gray-700">Include only inspections with failures</span>
+                    </label>
+                    <p className="text-xs text-gray-500 mt-1 ml-6">
+                      When enabled, report will only include inspections that have at least one failed item
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Format */}

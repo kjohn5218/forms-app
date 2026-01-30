@@ -17,7 +17,8 @@ import FuelCardReceipt from './pages/FuelCardReceipt'
 import PreTripTraining from './pages/PreTripTraining'
 import RedBinderChecklist from './pages/RedBinderChecklist'
 import SelectionGradeRoadTest from './pages/SelectionGradeRoadTest'
-import Reports from './pages/Reports'
+import ReportsHub from './pages/ReportsHub'
+import ForkliftInspectionReports from './pages/ForkliftInspectionReports'
 import ReportScheduler from './pages/ReportScheduler'
 
 function App() {
@@ -43,7 +44,8 @@ function App() {
           <Route path="/pre-trip-training" element={<PreTripTraining />} />
           <Route path="/red-binder-checklist" element={<RedBinderChecklist />} />
           <Route path="/selection-grade-road-test" element={<SelectionGradeRoadTest />} />
-          <Route path="/reports" element={<Reports />} />
+          <Route path="/reports" element={<ReportsHub />} />
+          <Route path="/reports/forklift-inspection" element={<ForkliftInspectionReports />} />
           <Route path="/report-scheduler" element={<ReportScheduler />} />
         </Routes>
       </div>

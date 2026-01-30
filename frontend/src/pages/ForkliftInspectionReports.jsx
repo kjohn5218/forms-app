@@ -510,7 +510,7 @@ const Reports = () => {
       <header className="bg-gradient-to-r from-gray-700 to-gray-800 shadow-lg sticky top-0 z-50">
         <div className="px-4 py-3">
           <div className="flex items-center gap-3">
-            <Link to="/" className="text-white/80 hover:text-white">
+            <Link to="/reports" className="text-white/80 hover:text-white">
               <ArrowLeft className="w-6 h-6" />
             </Link>
             <BarChart3 className="w-8 h-8 text-white" />

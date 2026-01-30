@@ -18,7 +18,8 @@ router.get('/', (req, res) => {
     const result = schedules.map(s => ({
       ...s,
       recipients: JSON.parse(s.recipients),
-      is_active: Boolean(s.is_active)
+      is_active: Boolean(s.is_active),
+      include_failures_only: Boolean(s.include_failures_only)
     }))
 
     res.json({
@@ -51,7 +52,8 @@ router.get('/:id', (req, res) => {
       schedule: {
         ...schedule,
         recipients: JSON.parse(schedule.recipients),
-        is_active: Boolean(schedule.is_active)
+        is_active: Boolean(schedule.is_active),
+        include_failures_only: Boolean(schedule.include_failures_only)
       }
     })
   } catch (error) {
@@ -68,11 +70,13 @@ router.post('/', (req, res) => {
   try {
     const {
       name,
+      report_type,
       frequency,
       day_of_week,
       day_of_month,
       time,
       terminal,
+      include_failures_only,
       recipients,
       format
     } = req.body
@@ -96,18 +100,20 @@ router.post('/', (req, res) => {
     const id = generateId()
 
     const stmt = db.prepare(`
-      INSERT INTO report_schedules (id, name, frequency, day_of_week, day_of_month, time, terminal, recipients, format, is_active)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+      INSERT INTO report_schedules (id, name, report_type, frequency, day_of_week, day_of_month, time, terminal, include_failures_only, recipients, format, is_active)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
     `)
 
     stmt.run(
       id,
       name,
+      report_type || 'forklift-inspection',
       frequency,
       day_of_week || null,
       day_of_month || null,
       time,
       terminal || null,
+      include_failures_only ? 1 : 0,
       JSON.stringify(recipients),
       format
     )
@@ -135,11 +141,13 @@ router.put('/:id', (req, res) => {
   try {
     const {
       name,
+      report_type,
       frequency,
       day_of_week,
       day_of_month,
       time,
       terminal,
+      include_failures_only,
       recipients,
       format,
       is_active
@@ -156,17 +164,19 @@ router.put('/:id', (req, res) => {
 
     const stmt = db.prepare(`
       UPDATE report_schedules
-      SET name = ?, frequency = ?, day_of_week = ?, day_of_month = ?, time = ?, terminal = ?, recipients = ?, format = ?, is_active = ?
+      SET name = ?, report_type = ?, frequency = ?, day_of_week = ?, day_of_month = ?, time = ?, terminal = ?, include_failures_only = ?, recipients = ?, format = ?, is_active = ?
       WHERE id = ?
     `)
 
     stmt.run(
       name || existing.name,
+      report_type || existing.report_type || 'forklift-inspection',
       frequency || existing.frequency,
       day_of_week !== undefined ? day_of_week : existing.day_of_week,
       day_of_month !== undefined ? day_of_month : existing.day_of_month,
       time || existing.time,
       terminal !== undefined ? terminal : existing.terminal,
+      include_failures_only !== undefined ? (include_failures_only ? 1 : 0) : existing.include_failures_only,
       recipients ? JSON.stringify(recipients) : existing.recipients,
       format || existing.format,
       is_active !== undefined ? (is_active ? 1 : 0) : existing.is_active,

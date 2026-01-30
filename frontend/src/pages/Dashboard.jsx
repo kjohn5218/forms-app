@@ -16,8 +16,7 @@ import {
   GraduationCap,
   BookOpen,
   ClipboardList,
-  BarChart3,
-  Calendar
+  BarChart3
 } from 'lucide-react'
 
 const formCards = [
@@ -159,7 +158,6 @@ const Dashboard = () => {
 
         {/* Reports Section */}
         <div className="mt-6">
-          <h2 className="text-lg font-semibold text-gray-700 mb-3 px-1">Reports</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             <Link
               to="/reports"
@@ -167,16 +165,7 @@ const Dashboard = () => {
             >
               <div className="flex items-center gap-3">
                 <BarChart3 className="w-8 h-8 opacity-90 flex-shrink-0" />
-                <span className="font-semibold text-sm leading-tight">Forklift Inspection Reports</span>
-              </div>
-            </Link>
-            <Link
-              to="/report-scheduler"
-              className="bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-xl p-4 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.02] min-h-[90px] flex flex-col justify-center"
-            >
-              <div className="flex items-center gap-3">
-                <Calendar className="w-8 h-8 opacity-90 flex-shrink-0" />
-                <span className="font-semibold text-sm leading-tight">Report Scheduler</span>
+                <span className="font-semibold text-sm leading-tight">Reports</span>
               </div>
             </Link>
           </div>

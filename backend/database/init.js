@@ -59,6 +59,19 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_schedules_active ON report_schedules(is_active);
 `)
 
+// Add new columns for report_type and include_failures_only if they don't exist
+try {
+  db.exec(`ALTER TABLE report_schedules ADD COLUMN report_type TEXT DEFAULT 'forklift-inspection'`)
+} catch (e) {
+  // Column already exists, ignore
+}
+
+try {
+  db.exec(`ALTER TABLE report_schedules ADD COLUMN include_failures_only INTEGER DEFAULT 0`)
+} catch (e) {
+  // Column already exists, ignore
+}
+
 console.log('Database initialized successfully')
 
 module.exports = db

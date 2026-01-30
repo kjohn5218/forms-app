@@ -429,20 +429,34 @@ const generateExcelReport = async (submissions, stats, dateRange, terminal) => {
   return Buffer.from(buffer)
 }
 
+// Check if a submission has any failures
+const hasFailures = (submission) => {
+  const inspection = submission.data?.inspection
+  if (!inspection) return false
+  return Object.values(inspection).some(value => value === 'Fail')
+}
+
 // Main function to generate report
 const generateReport = async (schedule) => {
   const dateRange = getDateRange(schedule.frequency)
-  const submissions = getForkliftInspections(schedule.terminal, dateRange)
+  let submissions = getForkliftInspections(schedule.terminal, dateRange)
+
+  // Filter to only failures if that option is enabled
+  if (schedule.include_failures_only) {
+    submissions = submissions.filter(hasFailures)
+  }
+
   const stats = calculateStats(submissions)
 
   const reports = []
+  const reportSuffix = schedule.include_failures_only ? '_Failures' : ''
 
   if (schedule.format === 'pdf' || schedule.format === 'both') {
     const pdfBuffer = await generatePDFReport(submissions, stats, dateRange, schedule.terminal)
     reports.push({
       type: 'pdf',
       buffer: pdfBuffer,
-      filename: `Forklift_Inspection_Report_${dateRange.start}_to_${dateRange.end}.pdf`
+      filename: `Forklift_Inspection_Report${reportSuffix}_${dateRange.start}_to_${dateRange.end}.pdf`
     })
   }
 
@@ -451,7 +465,7 @@ const generateReport = async (schedule) => {
     reports.push({
       type: 'excel',
       buffer: excelBuffer,
-      filename: `Forklift_Inspection_Report_${dateRange.start}_to_${dateRange.end}.xlsx`
+      filename: `Forklift_Inspection_Report${reportSuffix}_${dateRange.start}_to_${dateRange.end}.xlsx`
     })
   }
 
@@ -459,7 +473,8 @@ const generateReport = async (schedule) => {
     reports,
     stats,
     dateRange,
-    submissionCount: submissions.length
+    submissionCount: submissions.length,
+    failuresOnly: schedule.include_failures_only
   }
 }
 
