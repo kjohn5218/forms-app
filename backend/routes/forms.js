@@ -2,7 +2,7 @@ const express = require('express')
 const router = express.Router()
 const db = require('../database/init')
 const { validateForm } = require('../middleware/validation')
-const { sendFormNotification } = require('../services/emailService')
+const { sendFormNotification, sendForkliftFailureNotification, hasForkliftInspectionFailures } = require('../services/emailService')
 
 // Helper to get submitted_by field based on form type
 const getSubmittedBy = (formType, data) => {
@@ -83,6 +83,20 @@ const handleFormSubmission = (formType) => {
       }).catch(err => {
         console.error('Email notification error:', err)
       })
+
+      // For forklift inspections, send failure notification to shops if any items failed
+      if (formType === 'forklift-inspection' && hasForkliftInspectionFailures(data)) {
+        sendForkliftFailureNotification({
+          ...data,
+          terminal
+        }).then(result => {
+          if (result.success) {
+            console.log('Forklift failure notification sent for:', submissionId)
+          }
+        }).catch(err => {
+          console.error('Forklift failure notification error:', err)
+        })
+      }
 
       res.json({
         success: true,

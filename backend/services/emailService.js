@@ -14,6 +14,7 @@ const SAFETY_EMAIL = process.env.SAFETY_EMAIL || 'safety@ccfs.com'
 const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@ccfs.com'
 const SERVICE_CENTER_EMAIL_DOMAIN = process.env.SERVICE_CENTER_EMAIL_DOMAIN || 'ccfs.com'
 const EMAIL_OVERRIDE = process.env.EMAIL_OVERRIDE || null
+const SHOPS_EMAIL = 'shops@nacompanies.com'
 
 // Helper to apply email override for development/testing
 const applyEmailOverride = (recipients) => {
@@ -253,6 +254,120 @@ const sendLoadQualityExceptionEmail = async (data) => {
   }
 }
 
+// Check if forklift inspection has any failed items
+const hasForkliftInspectionFailures = (data) => {
+  if (!data.inspection) return false
+  return Object.values(data.inspection).some(value => value === 'Fail')
+}
+
+// Get list of failed items from forklift inspection
+const getFailedItems = (data) => {
+  if (!data.inspection) return []
+  const itemLabels = {
+    forks: 'Forks (cracks, bends, wear)',
+    mastLiftChains: 'Mast and Lift Chains',
+    overheadGuard: 'Overhead Guard',
+    loadBackrest: 'Load Backrest',
+    tiresWheels: 'Tires and Wheels',
+    brakes: 'Brakes (service and parking)',
+    steering: 'Steering',
+    horn: 'Horn',
+    lights: 'Lights (head, tail, warning)',
+    backupAlarm: 'Backup Alarm',
+    hydraulicSystem: 'Hydraulic System (leaks, operation)',
+    batteryFuel: 'Battery/Fuel Level',
+    seatBelt: 'Seat Belt',
+    mirrors: 'Mirrors',
+    fireExtinguisher: 'Fire Extinguisher'
+  }
+
+  return Object.entries(data.inspection)
+    .filter(([key, value]) => value === 'Fail')
+    .map(([key]) => itemLabels[key] || key)
+}
+
+// Send forklift inspection failure notification to shops
+const sendForkliftFailureNotification = async (data) => {
+  try {
+    const failedItems = getFailedItems(data)
+    if (failedItems.length === 0) {
+      return { success: true, skipped: true, reason: 'No failures found' }
+    }
+
+    const submittedAt = new Date().toLocaleString('en-US', {
+      timeZone: 'America/Chicago',
+      dateStyle: 'full',
+      timeStyle: 'short'
+    })
+
+    const subject = `[FORKLIFT INSPECTION FAILURE] - ${data.terminal} - Forklift #${data.forkliftId} - ${data.submissionId}`
+
+    const emailBody = `
+FORKLIFT INSPECTION FAILURE NOTIFICATION
+========================================
+
+Submission ID: ${data.submissionId}
+Terminal: ${data.terminal}
+Date: ${data.date}
+Submitted: ${submittedAt}
+
+FORKLIFT DETAILS:
+- Forklift ID: ${data.forkliftId}
+- Operator: ${data.operatorName}
+- Shift: ${data.shift}
+- Hour Meter Reading: ${data.hourMeter}
+
+FAILED INSPECTION ITEMS (${failedItems.length}):
+${failedItems.map(item => `  - ${item}`).join('\n')}
+
+ADDITIONAL DETAILS:
+- Safe to Operate: ${data.safeToOperate}
+- Defects Found: ${data.defectsFound || 'None specified'}
+
+---
+This notification was automatically generated because one or more inspection items failed.
+CCFS LTL Logistics Safety Management System
+`
+
+    // Skip if AWS credentials not configured
+    if (!process.env.AWS_ACCESS_KEY_ID) {
+      console.log('AWS credentials not configured - skipping forklift failure email')
+      console.log('Would have sent forklift failure email to:', SHOPS_EMAIL)
+      console.log('Subject:', subject)
+      return { success: true, skipped: true, recipient: SHOPS_EMAIL }
+    }
+
+    const toAddresses = applyEmailOverride([SHOPS_EMAIL])
+
+    const command = new SendEmailCommand({
+      Source: FROM_EMAIL,
+      Destination: {
+        ToAddresses: toAddresses
+      },
+      Message: {
+        Subject: {
+          Data: subject,
+          Charset: 'UTF-8'
+        },
+        Body: {
+          Text: {
+            Data: emailBody,
+            Charset: 'UTF-8'
+          }
+        }
+      }
+    })
+
+    await sesClient.send(command)
+    console.log(`Forklift failure email sent to: ${toAddresses.join(', ')}`)
+    return { success: true, recipient: toAddresses }
+
+  } catch (error) {
+    console.error('Error sending forklift failure email:', error)
+    return { success: false, error: error.message }
+  }
+}
+
 const sendFormNotification = async (formType, data) => {
   try {
     // Special handling for load quality exception - send to service centers with PDF
@@ -316,5 +431,7 @@ const sendFormNotification = async (formType, data) => {
 module.exports = {
   sendFormNotification,
   getServiceCenterEmail,
-  SERVICE_CENTER_EMAIL_DOMAIN
+  SERVICE_CENTER_EMAIL_DOMAIN,
+  sendForkliftFailureNotification,
+  hasForkliftInspectionFailures
 }

@@ -17,6 +17,7 @@ import FuelCardReceipt from './pages/FuelCardReceipt'
 import PreTripTraining from './pages/PreTripTraining'
 import RedBinderChecklist from './pages/RedBinderChecklist'
 import SelectionGradeRoadTest from './pages/SelectionGradeRoadTest'
+import Reports from './pages/Reports'
 
 function App() {
   return (
@@ -41,6 +42,7 @@ function App() {
           <Route path="/pre-trip-training" element={<PreTripTraining />} />
           <Route path="/red-binder-checklist" element={<RedBinderChecklist />} />
           <Route path="/selection-grade-road-test" element={<SelectionGradeRoadTest />} />
+          <Route path="/reports" element={<Reports />} />
         </Routes>
       </div>
     </Router>
