@@ -13,6 +13,14 @@ const sesClient = new SESClient({
 const SAFETY_EMAIL = process.env.SAFETY_EMAIL || 'safety@ccfs.com'
 const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@ccfs.com'
 const SERVICE_CENTER_EMAIL_DOMAIN = process.env.SERVICE_CENTER_EMAIL_DOMAIN || 'ccfs.com'
+const EMAIL_OVERRIDE = process.env.EMAIL_OVERRIDE || null
+
+// Helper to apply email override for development/testing
+const applyEmailOverride = (recipients) => {
+  if (!EMAIL_OVERRIDE) return recipients
+  console.log(`[EMAIL OVERRIDE] Redirecting from [${Array.isArray(recipients) ? recipients.join(', ') : recipients}] to [${EMAIL_OVERRIDE}]`)
+  return Array.isArray(recipients) ? [EMAIL_OVERRIDE] : EMAIL_OVERRIDE
+}
 
 // Generate service center email from code (e.g., ABQ -> ABQ@ccfs.com)
 const getServiceCenterEmail = (serviceCenter) => {
@@ -216,10 +224,13 @@ const sendLoadQualityExceptionEmail = async (data) => {
       return { success: true, skipped: true, recipients: Array.from(recipients), pdfSize: pdfBuffer.length }
     }
 
+    // Apply email override if configured
+    const finalRecipients = applyEmailOverride(Array.from(recipients))
+
     // Build MIME message with PDF attachment
     const mimeMessage = buildMimeMessage(
       FROM_EMAIL,
-      Array.from(recipients),
+      finalRecipients,
       subject,
       emailBody,
       pdfBuffer,
@@ -233,8 +244,8 @@ const sendLoadQualityExceptionEmail = async (data) => {
     })
 
     await sesClient.send(command)
-    console.log(`Load quality exception email with PDF sent to: ${Array.from(recipients).join(', ')}`)
-    return { success: true, recipients: Array.from(recipients) }
+    console.log(`Load quality exception email with PDF sent to: ${finalRecipients.join(', ')}`)
+    return { success: true, recipients: finalRecipients }
 
   } catch (error) {
     console.error('Error sending load quality exception email:', error)
@@ -271,10 +282,12 @@ const sendFormNotification = async (formType, data) => {
 
     const emailBody = generateEmailBody(formType, data)
 
+    const toAddresses = applyEmailOverride([SAFETY_EMAIL])
+
     const command = new SendEmailCommand({
       Source: FROM_EMAIL,
       Destination: {
-        ToAddresses: [SAFETY_EMAIL]
+        ToAddresses: toAddresses
       },
       Message: {
         Subject: {
