@@ -173,6 +173,15 @@ const STFPractical = () => {
             required
           />
           <TextInput
+            label="Evaluator/Manager Email"
+            name="observerEmail"
+            register={register}
+            errors={errors}
+            required
+            type="email"
+            placeholder="email@ccfs.com"
+          />
+          <TextInput
             label="Employee Name"
             name="employeeName"
             register={register}

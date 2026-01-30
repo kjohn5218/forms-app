@@ -144,6 +144,15 @@ const SevenKeysBacking = () => {
             required
           />
           <TextInput
+            label="Interviewer/Manager Email"
+            name="observerEmail"
+            register={register}
+            errors={errors}
+            required
+            type="email"
+            placeholder="email@ccfs.com"
+          />
+          <TextInput
             label="Driver Name"
             name="driverName"
             register={register}

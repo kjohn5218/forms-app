@@ -88,6 +88,8 @@ const schemas = {
     habits: Joi.object().optional(),
     keys: Joi.object().optional(),
     comments: Joi.string().allow('').optional(),
+    // Observer email field (for PDF notification)
+    observerEmail: Joi.string().email().allow('').optional(),
     // Employee/Driver fields
     employeeObserved: Joi.string().allow('').optional(),
     driverName: Joi.string().allow('').optional(),

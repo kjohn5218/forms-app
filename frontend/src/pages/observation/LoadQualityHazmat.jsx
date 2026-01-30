@@ -162,6 +162,15 @@ const LoadQualityHazmat = () => {
             errors={errors}
             required
           />
+          <TextInput
+            label="Observer/Manager Email"
+            name="observerEmail"
+            register={register}
+            errors={errors}
+            required
+            type="email"
+            placeholder="email@ccfs.com"
+          />
         </FormSection>
 
         <FormSection title="Load Information">

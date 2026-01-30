@@ -156,6 +156,15 @@ const DockSafety = () => {
             required
           />
           <TextInput
+            label="Observer/Manager Email"
+            name="observerEmail"
+            register={register}
+            errors={errors}
+            required
+            type="email"
+            placeholder="email@ccfs.com"
+          />
+          <TextInput
             label="Employee Observed"
             name="employeeObserved"
             register={register}

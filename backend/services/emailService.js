@@ -1,5 +1,5 @@
 const { SESClient, SendEmailCommand, SendRawEmailCommand } = require('@aws-sdk/client-ses')
-const { generateLoadQualityExceptionPDF } = require('./pdfService')
+const { generateLoadQualityExceptionPDF, generateObservationPDF } = require('./pdfService')
 
 // Initialize SES client
 const sesClient = new SESClient({
@@ -183,7 +183,7 @@ Please log into the CCFS Forms system to view the complete submission details.
 
   body += `
 ---
-CCFS LTL Logistics Safety Management System
+CCFS Safety Management System
 `
 
   return body
@@ -489,11 +489,125 @@ CCFS LTL Logistics Safety Management System
   }
 }
 
+// Observation form type titles for emails
+const OBSERVATION_FORM_TITLES = {
+  'slips-trips-falls': 'Slips, Trips & Falls Observation',
+  'driver-on-road': 'Driver On-Road Observation',
+  'dock-safety': 'Dock Safety Observation',
+  'stf-practical': 'Slips, Trips & Falls Practical Evaluation',
+  'lift-push-pull': 'Lift, Push, Pull Observation',
+  'driver-pre-route': 'Delivery Driver Pre-route Observation',
+  'driver-post-route': 'Delivery Driver Post-route Observation',
+  'driver-hazmat': 'Driver Hazmat Observation',
+  'forklift-operation': 'Forklift Operation Observation',
+  'load-quality-hazmat': 'Load Quality / Hazmat Loading Observation',
+  'five-seeing-habits': 'Five Seeing Habits Interview',
+  'seven-keys-backing': 'Seven Keys to Backing Interview',
+  'yard-observation': 'Yard Observation',
+  'truck-trailer-coupling': 'Truck & Trailer Coupling Observation'
+}
+
+// Send observation form with PDF to observer email and safety
+const sendObservationEmail = async (data) => {
+  try {
+    // Get observer email - must have this field
+    const observerEmail = data.observerEmail
+    if (!observerEmail) {
+      console.log('No observer email provided for observation form')
+      return { success: false, error: 'No observer email provided' }
+    }
+
+    // Build recipient list
+    const recipients = new Set()
+    recipients.add(observerEmail)
+    recipients.add(SAFETY_EMAIL)
+
+    const formTitle = OBSERVATION_FORM_TITLES[data.formSubtype] || 'Observation Form'
+    const observerName = data.observerName || data.evaluatorName || data.interviewerName || 'Unknown'
+    const terminal = data.terminal || 'N/A'
+    const result = data.result || 'N/A'
+
+    const subject = `[${formTitle}] - ${terminal} - ${data.submissionId}`
+
+    const submittedAt = new Date().toLocaleString('en-US', {
+      timeZone: 'America/Chicago',
+      dateStyle: 'full',
+      timeStyle: 'short'
+    })
+
+    const emailBody = `
+${formTitle.toUpperCase()}
+${'='.repeat(formTitle.length)}
+
+Submission ID: ${data.submissionId}
+Terminal: ${terminal}
+Date: ${data.date}
+Submitted: ${submittedAt}
+Observer/Evaluator: ${observerName}
+Email: ${observerEmail}
+
+RESULT: ${result}
+
+Please see the attached PDF for the complete observation details.
+
+---
+CCFS LTL Logistics Safety Management System
+`
+
+    // Generate PDF
+    console.log('Generating PDF for observation form...')
+    const pdfBuffer = await generateObservationPDF(data)
+    const pdfFilename = `${formTitle.replace(/[^a-zA-Z0-9 ]/g, '').replace(/ /g, '_')}_${data.submissionId}.pdf`
+    console.log(`PDF generated: ${pdfFilename} (${pdfBuffer.length} bytes)`)
+
+    // Skip if AWS credentials not configured
+    if (!process.env.AWS_ACCESS_KEY_ID) {
+      console.log('AWS credentials not configured - skipping observation email')
+      console.log('Would have sent observation email to:', Array.from(recipients))
+      console.log('Subject:', subject)
+      console.log('PDF attachment:', pdfFilename)
+      return { success: true, skipped: true, recipients: Array.from(recipients), pdfSize: pdfBuffer.length }
+    }
+
+    // Apply email override if configured
+    const finalRecipients = applyEmailOverride(Array.from(recipients))
+
+    // Build MIME message with PDF attachment
+    const mimeMessage = buildMimeMessage(
+      FROM_EMAIL,
+      finalRecipients,
+      subject,
+      emailBody,
+      pdfBuffer,
+      pdfFilename
+    )
+
+    const command = new SendRawEmailCommand({
+      RawMessage: {
+        Data: Buffer.from(mimeMessage)
+      }
+    })
+
+    await sesClient.send(command)
+    console.log(`Observation email with PDF sent to: ${finalRecipients.join(', ')}`)
+    return { success: true, recipients: finalRecipients }
+
+  } catch (error) {
+    console.error('Error sending observation email:', error)
+    return { success: false, error: error.message }
+  }
+}
+
 const sendFormNotification = async (formType, data) => {
   try {
     // Special handling for load quality exception - send to service centers with PDF
     if (formType === 'load-quality-exception') {
       return await sendLoadQualityExceptionEmail(data)
+    }
+
+    // Special handling for observation forms - send PDF to observer email and safety
+    if (formType === 'observation' && data.formSubtype && data.observerEmail) {
+      return await sendObservationEmail(data)
     }
 
     // Skip email if AWS credentials are not configured

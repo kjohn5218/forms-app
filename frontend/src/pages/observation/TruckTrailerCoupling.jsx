@@ -162,6 +162,15 @@ const TruckTrailerCoupling = () => {
             required
           />
           <TextInput
+            label="Observer/Manager Email"
+            name="observerEmail"
+            register={register}
+            errors={errors}
+            required
+            type="email"
+            placeholder="email@ccfs.com"
+          />
+          <TextInput
             label="Driver Name"
             name="driverName"
             register={register}
