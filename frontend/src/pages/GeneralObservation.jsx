@@ -48,7 +48,7 @@ const PPE_TYPES = [
   'Hearing Protection'
 ]
 
-const ObservationForms = () => {
+const GeneralObservation = () => {
   const navigate = useNavigate()
   const [photos, setPhotos] = useState([])
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -97,7 +97,7 @@ const ObservationForms = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <FormHeader title="Observation Form" gradient="from-green-500 to-green-600" />
+      <FormHeader title="General Observation" gradient="from-green-500 to-green-600" backTo="/observation-forms" />
 
       <FormContainer onSubmit={handleSubmit(onSubmit)}>
         <FormSection title="Observation Type">
@@ -294,4 +294,4 @@ const ObservationForms = () => {
   )
 }
 
-export default ObservationForms
+export default GeneralObservation

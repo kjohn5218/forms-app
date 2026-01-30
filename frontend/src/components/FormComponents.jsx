@@ -41,11 +41,11 @@ export const getCurrentTime = () => {
 }
 
 // Form Header Component
-export const FormHeader = ({ title, gradient = 'from-blue-600 to-blue-700' }) => (
+export const FormHeader = ({ title, gradient = 'from-blue-600 to-blue-700', backTo = '/' }) => (
   <header className="bg-blue-600 text-white sticky top-0 z-10 shadow-sm">
     <div className="px-4 sm:px-6 lg:px-8">
       <div className="flex items-center h-14 gap-3">
-        <Link to="/" className="p-2 hover:bg-blue-500 rounded-md transition-colors">
+        <Link to={backTo} className="p-2 hover:bg-blue-500 rounded-md transition-colors">
           <ArrowLeft className="w-6 h-6" />
         </Link>
         <div className="flex items-center gap-3">

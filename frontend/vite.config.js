@@ -8,7 +8,13 @@ export default defineConfig({
     proxy: {
       '/api': {
         target: 'http://localhost:3002',
-        changeOrigin: true
+        changeOrigin: true,
+        configure: (proxy) => {
+          proxy.on('proxyRes', (proxyRes) => {
+            // Remove connection close header to prevent parse errors
+            delete proxyRes.headers['connection']
+          })
+        }
       }
     }
   }
