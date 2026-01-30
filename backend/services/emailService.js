@@ -286,6 +286,61 @@ const getFailedItems = (data) => {
     .map(([key]) => itemLabels[key] || key)
 }
 
+// Build MIME message with multiple image attachments for forklift failure
+const buildForkliftFailureMimeMessage = (from, to, subject, textBody, itemPhotos, itemLabels) => {
+  const boundary = `----=_Part_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  const toAddresses = Array.isArray(to) ? to.join(', ') : to
+
+  let message = [
+    `From: ${from}`,
+    `To: ${toAddresses}`,
+    `Subject: ${subject}`,
+    'MIME-Version: 1.0',
+    `Content-Type: multipart/mixed; boundary="${boundary}"`,
+    '',
+    `--${boundary}`,
+    'Content-Type: text/plain; charset=UTF-8',
+    'Content-Transfer-Encoding: 7bit',
+    '',
+    textBody
+  ]
+
+  // Add photos as attachments
+  if (itemPhotos && typeof itemPhotos === 'object') {
+    let photoIndex = 1
+    for (const [itemName, photos] of Object.entries(itemPhotos)) {
+      if (Array.isArray(photos)) {
+        const itemLabel = itemLabels[itemName] || itemName
+        photos.forEach((photoData, idx) => {
+          if (photoData && photoData.startsWith('data:image')) {
+            // Extract base64 data and image type
+            const matches = photoData.match(/^data:image\/(\w+);base64,(.+)$/)
+            if (matches) {
+              const imageType = matches[1]
+              const base64Data = matches[2]
+              const filename = `${itemLabel.replace(/[^a-zA-Z0-9]/g, '_')}_Photo_${idx + 1}.${imageType}`
+
+              message.push('')
+              message.push(`--${boundary}`)
+              message.push(`Content-Type: image/${imageType}`)
+              message.push('Content-Transfer-Encoding: base64')
+              message.push(`Content-Disposition: attachment; filename="${filename}"`)
+              message.push('')
+              message.push(base64Data)
+              photoIndex++
+            }
+          }
+        })
+      }
+    }
+  }
+
+  message.push('')
+  message.push(`--${boundary}--`)
+
+  return message.join('\r\n')
+}
+
 // Send forklift inspection failure notification to shops
 const sendForkliftFailureNotification = async (data) => {
   try {
@@ -299,6 +354,32 @@ const sendForkliftFailureNotification = async (data) => {
       dateStyle: 'full',
       timeStyle: 'short'
     })
+
+    const itemLabels = {
+      forks: 'Forks',
+      mastLiftChains: 'Mast_Lift_Chains',
+      overheadGuard: 'Overhead_Guard',
+      loadBackrest: 'Load_Backrest',
+      tiresWheels: 'Tires_Wheels',
+      brakes: 'Brakes',
+      steering: 'Steering',
+      horn: 'Horn',
+      lights: 'Lights',
+      backupAlarm: 'Backup_Alarm',
+      hydraulicSystem: 'Hydraulic_System',
+      batteryFuel: 'Battery_Fuel',
+      seatBelt: 'Seat_Belt',
+      mirrors: 'Mirrors',
+      fireExtinguisher: 'Fire_Extinguisher'
+    }
+
+    // Count total photos attached
+    let totalPhotos = 0
+    if (data.itemPhotos) {
+      Object.values(data.itemPhotos).forEach(photos => {
+        if (Array.isArray(photos)) totalPhotos += photos.length
+      })
+    }
 
     const subject = `[FORKLIFT INSPECTION FAILURE] - ${data.terminal} - Forklift #${data.forkliftId} - ${data.submissionId}`
 
@@ -324,6 +405,8 @@ ADDITIONAL DETAILS:
 - Safe to Operate: ${data.safeToOperate}
 - Defects Found: ${data.defectsFound || 'None specified'}
 
+PHOTOS ATTACHED: ${totalPhotos} photo(s) of failed items
+
 ---
 This notification was automatically generated because one or more inspection items failed.
 CCFS LTL Logistics Safety Management System
@@ -334,11 +417,35 @@ CCFS LTL Logistics Safety Management System
       console.log('AWS credentials not configured - skipping forklift failure email')
       console.log('Would have sent forklift failure email to:', SHOPS_EMAIL)
       console.log('Subject:', subject)
-      return { success: true, skipped: true, recipient: SHOPS_EMAIL }
+      console.log('Photos attached:', totalPhotos)
+      return { success: true, skipped: true, recipient: SHOPS_EMAIL, photosAttached: totalPhotos }
     }
 
     const toAddresses = applyEmailOverride([SHOPS_EMAIL])
 
+    // If there are photos, send as raw email with attachments
+    if (totalPhotos > 0) {
+      const mimeMessage = buildForkliftFailureMimeMessage(
+        FROM_EMAIL,
+        toAddresses,
+        subject,
+        emailBody,
+        data.itemPhotos,
+        itemLabels
+      )
+
+      const command = new SendRawEmailCommand({
+        RawMessage: {
+          Data: Buffer.from(mimeMessage)
+        }
+      })
+
+      await sesClient.send(command)
+      console.log(`Forklift failure email with ${totalPhotos} photos sent to: ${toAddresses.join(', ')}`)
+      return { success: true, recipient: toAddresses, photosAttached: totalPhotos }
+    }
+
+    // No photos, send simple email
     const command = new SendEmailCommand({
       Source: FROM_EMAIL,
       Destination: {
