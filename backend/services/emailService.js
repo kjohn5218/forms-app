@@ -256,8 +256,14 @@ const sendLoadQualityExceptionEmail = async (data) => {
 
 // Check if forklift inspection has any failed items
 const hasForkliftInspectionFailures = (data) => {
-  if (!data.inspection) return false
-  return Object.values(data.inspection).some(value => value === 'Fail')
+  if (!data.inspection) {
+    console.log('[hasForkliftInspectionFailures] No inspection object found in data')
+    return false
+  }
+  const hasFailures = Object.values(data.inspection).some(value => value === 'Fail')
+  console.log('[hasForkliftInspectionFailures] Inspection values:', Object.values(data.inspection))
+  console.log('[hasForkliftInspectionFailures] Has failures:', hasFailures)
+  return hasFailures
 }
 
 // Get list of failed items from forklift inspection
@@ -344,8 +350,16 @@ const buildForkliftFailureMimeMessage = (from, to, subject, textBody, itemPhotos
 // Send forklift inspection failure notification to shops
 const sendForkliftFailureNotification = async (data) => {
   try {
+    // Debug logging
+    console.log('[Forklift Failure Email] Received data keys:', Object.keys(data))
+    console.log('[Forklift Failure Email] inspection object:', JSON.stringify(data.inspection, null, 2))
+    console.log('[Forklift Failure Email] itemPhotos keys:', data.itemPhotos ? Object.keys(data.itemPhotos) : 'none')
+
     const failedItems = getFailedItems(data)
+    console.log('[Forklift Failure Email] Failed items found:', failedItems)
+
     if (failedItems.length === 0) {
+      console.log('[Forklift Failure Email] No failures found, skipping email')
       return { success: true, skipped: true, reason: 'No failures found' }
     }
 

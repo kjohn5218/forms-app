@@ -85,17 +85,26 @@ const handleFormSubmission = (formType) => {
       })
 
       // For forklift inspections, send failure notification to shops if any items failed
-      if (formType === 'forklift-inspection' && hasForkliftInspectionFailures(data)) {
-        sendForkliftFailureNotification({
-          ...data,
-          terminal
-        }).then(result => {
-          if (result.success) {
-            console.log('Forklift failure notification sent for:', submissionId)
-          }
-        }).catch(err => {
-          console.error('Forklift failure notification error:', err)
-        })
+      if (formType === 'forklift-inspection') {
+        console.log('[Forklift Route] Checking for failures...')
+        console.log('[Forklift Route] Data inspection:', data.inspection)
+        console.log('[Forklift Route] Data itemPhotos:', data.itemPhotos ? Object.keys(data.itemPhotos) : 'none')
+
+        if (hasForkliftInspectionFailures(data)) {
+          console.log('[Forklift Route] Failures detected, sending notification...')
+          sendForkliftFailureNotification({
+            ...data,
+            terminal
+          }).then(result => {
+            if (result.success) {
+              console.log('Forklift failure notification sent for:', submissionId)
+            }
+          }).catch(err => {
+            console.error('Forklift failure notification error:', err)
+          })
+        } else {
+          console.log('[Forklift Route] No failures detected')
+        }
       }
 
       res.json({

@@ -200,8 +200,20 @@ const ForkliftInspection = () => {
       return
     }
 
+    // Check if all inspection items have been completed
+    const inspection = data.inspection || {}
+    const missingItems = INSPECTION_ITEMS.filter(item => {
+      const value = inspection[item.name]
+      return !value || (value !== 'Pass' && value !== 'Fail' && value !== 'N/A')
+    }).map(item => item.label)
+
+    if (missingItems.length > 0) {
+      alert(`Please complete all inspection items before submitting.\n\nMissing selections for:\n${missingItems.join('\n')}`)
+      return
+    }
+
     // Check if any failed items are missing photos
-    const failedItemsWithoutPhotos = Object.entries(data.inspection || {})
+    const failedItemsWithoutPhotos = Object.entries(inspection)
       .filter(([key, value]) => value === 'Fail' && (!itemPhotos[key] || itemPhotos[key].length === 0))
       .map(([key]) => INSPECTION_ITEMS.find(i => i.name === key)?.label || key)
 
