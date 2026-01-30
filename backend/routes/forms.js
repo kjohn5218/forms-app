@@ -69,42 +69,38 @@ const handleFormSubmission = (formType) => {
         JSON.stringify(data)
       )
 
-      // Send email notification (async, don't wait)
-      sendFormNotification(formType, {
-        ...data,
-        submittedBy,
-        terminal
-      }).then(result => {
-        if (result.success && !result.skipped) {
-          // Update email_sent flag
-          db.prepare('UPDATE form_submissions SET email_sent = 1 WHERE id = ?')
-            .run(submissionId)
-        }
-      }).catch(err => {
-        console.error('Email notification error:', err)
-      })
-
-      // For forklift inspections, send failure notification to shops if any items failed
+      // For forklift inspections, only send email to shops if there are failures
+      // (do not send to safety@ccfs.com)
       if (formType === 'forklift-inspection') {
-        console.log('[Forklift Route] Checking for failures...')
-        console.log('[Forklift Route] Data inspection:', data.inspection)
-        console.log('[Forklift Route] Data itemPhotos:', data.itemPhotos ? Object.keys(data.itemPhotos) : 'none')
-
         if (hasForkliftInspectionFailures(data)) {
-          console.log('[Forklift Route] Failures detected, sending notification...')
           sendForkliftFailureNotification({
             ...data,
             terminal
           }).then(result => {
-            if (result.success) {
+            if (result.success && !result.skipped) {
+              db.prepare('UPDATE form_submissions SET email_sent = 1 WHERE id = ?')
+                .run(submissionId)
               console.log('Forklift failure notification sent for:', submissionId)
             }
           }).catch(err => {
             console.error('Forklift failure notification error:', err)
           })
-        } else {
-          console.log('[Forklift Route] No failures detected')
         }
+      } else {
+        // Send email notification for other form types (async, don't wait)
+        sendFormNotification(formType, {
+          ...data,
+          submittedBy,
+          terminal
+        }).then(result => {
+          if (result.success && !result.skipped) {
+            // Update email_sent flag
+            db.prepare('UPDATE form_submissions SET email_sent = 1 WHERE id = ?')
+              .run(submissionId)
+          }
+        }).catch(err => {
+          console.error('Email notification error:', err)
+        })
       }
 
       res.json({
