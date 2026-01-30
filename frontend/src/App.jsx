@@ -18,6 +18,7 @@ import PreTripTraining from './pages/PreTripTraining'
 import RedBinderChecklist from './pages/RedBinderChecklist'
 import SelectionGradeRoadTest from './pages/SelectionGradeRoadTest'
 import Reports from './pages/Reports'
+import ReportScheduler from './pages/ReportScheduler'
 
 function App() {
   return (
@@ -43,6 +44,7 @@ function App() {
           <Route path="/red-binder-checklist" element={<RedBinderChecklist />} />
           <Route path="/selection-grade-road-test" element={<SelectionGradeRoadTest />} />
           <Route path="/reports" element={<Reports />} />
+          <Route path="/report-scheduler" element={<ReportScheduler />} />
         </Routes>
       </div>
     </Router>

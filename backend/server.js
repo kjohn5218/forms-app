@@ -3,6 +3,8 @@ const express = require('express')
 const cors = require('cors')
 const path = require('path')
 const formsRouter = require('./routes/forms')
+const schedulesRouter = require('./routes/schedules')
+const { initializeScheduler, stopScheduler } = require('./services/schedulerService')
 
 const app = express()
 const PORT = process.env.PORT || 3002
@@ -14,6 +16,7 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }))
 
 // API routes
 app.use('/api/forms', formsRouter)
+app.use('/api/schedules', schedulesRouter)
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -57,6 +60,22 @@ app.listen(PORT, () => {
     ║                                                   ║
     ╚═══════════════════════════════════════════════════╝
   `)
+
+  // Initialize report scheduler
+  initializeScheduler()
+})
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully...')
+  stopScheduler()
+  process.exit(0)
+})
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully...')
+  stopScheduler()
+  process.exit(0)
 })
 
 module.exports = app

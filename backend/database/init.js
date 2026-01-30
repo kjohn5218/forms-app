@@ -36,6 +36,29 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_submitted_at ON form_submissions(submitted_at);
 `)
 
+// Create report schedules table
+db.exec(`
+  CREATE TABLE IF NOT EXISTS report_schedules (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    frequency TEXT NOT NULL,
+    day_of_week INTEGER,
+    day_of_month INTEGER,
+    time TEXT NOT NULL,
+    terminal TEXT,
+    recipients TEXT NOT NULL,
+    format TEXT NOT NULL,
+    is_active INTEGER DEFAULT 1,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    last_run_at TEXT,
+    last_run_status TEXT
+  )
+`)
+
+db.exec(`
+  CREATE INDEX IF NOT EXISTS idx_schedules_active ON report_schedules(is_active);
+`)
+
 console.log('Database initialized successfully')
 
 module.exports = db
