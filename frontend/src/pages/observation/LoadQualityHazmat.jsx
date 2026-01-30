@@ -109,11 +109,13 @@ const LoadQualityHazmat = () => {
           state: { submissionId, formType: 'Load Quality/Hazmat Loading Observation' }
         })
       } else {
-        throw new Error('Submission failed')
+        const errorData = await response.json()
+        console.error('Validation error:', errorData)
+        throw new Error(errorData.error || 'Submission failed')
       }
     } catch (error) {
       console.error('Error submitting form:', error)
-      alert('Error submitting form. Please try again.')
+      alert(`Error submitting form: ${error.message}`)
     } finally {
       setIsSubmitting(false)
     }

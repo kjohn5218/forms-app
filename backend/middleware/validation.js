@@ -82,7 +82,7 @@ const schemas = {
     properStorage: Joi.string().allow('').optional(),
     // Specialized observation form fields
     formSubtype: Joi.string().allow('').optional(),
-    result: Joi.string().allow('').optional(),
+    result: Joi.string().allow('', null).optional(),
     observation: Joi.object().optional(),
     practical: Joi.object().optional(),
     habits: Joi.object().optional(),
