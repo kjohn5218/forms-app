@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback, memo } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import { Camera, X, AlertTriangle } from 'lucide-react'
@@ -37,35 +37,92 @@ const INSPECTION_ITEMS = [
   { name: 'fireExtinguisher', label: 'Fire Extinguisher' }
 ]
 
-// Inspection Item with Photo Prompt on Fail
-const InspectionItemWithPhoto = ({ item, register, control, itemPhotos, setItemPhotos }) => {
+// Photo capture component for a single failed item - separate to avoid re-renders
+const ItemPhotoCapture = memo(({ itemName, itemLabel, photos, onAddPhoto, onRemovePhoto }) => {
   const inputRef = useRef(null)
-  const fieldValue = useWatch({ control, name: `inspection.${item.name}` })
-  const isFailed = fieldValue === 'Fail'
-  const photos = itemPhotos[item.name] || []
 
-  const handlePhotoCapture = (e) => {
-    const files = Array.from(e.target.files)
+  const handleFileChange = useCallback((e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const files = Array.from(e.target.files || [])
+    if (files.length === 0) return
+
     files.forEach(file => {
       if (photos.length >= 3) return
       const reader = new FileReader()
       reader.onloadend = () => {
-        setItemPhotos(prev => ({
-          ...prev,
-          [item.name]: [...(prev[item.name] || []), reader.result].slice(0, 3)
-        }))
+        onAddPhoto(itemName, reader.result)
       }
       reader.readAsDataURL(file)
     })
-    e.target.value = ''
-  }
+    // Reset input
+    if (inputRef.current) {
+      inputRef.current.value = ''
+    }
+  }, [itemName, photos.length, onAddPhoto])
 
-  const removePhoto = (index) => {
-    setItemPhotos(prev => ({
-      ...prev,
-      [item.name]: (prev[item.name] || []).filter((_, i) => i !== index)
-    }))
-  }
+  const handleButtonClick = useCallback((e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    inputRef.current?.click()
+  }, [])
+
+  return (
+    <div className="mt-3 p-3 bg-red-100 rounded-lg border border-red-200">
+      <div className="flex items-center gap-2 mb-2">
+        <AlertTriangle className="w-4 h-4 text-red-600" />
+        <span className="text-sm font-medium text-red-700">Photo required for failed item</span>
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleFileChange}
+        className="hidden"
+        onClick={(e) => e.stopPropagation()}
+      />
+      {photos.length < 3 && (
+        <button
+          type="button"
+          onClick={handleButtonClick}
+          className="flex items-center gap-2 px-3 py-2 bg-white border border-red-300 rounded-lg text-red-700 hover:bg-red-50 transition-colors"
+        >
+          <Camera className="w-4 h-4" />
+          <span className="text-sm">Take Photo of Issue ({photos.length}/3)</span>
+        </button>
+      )}
+      {photos.length > 0 && (
+        <div className="mt-2 flex gap-2">
+          {photos.map((photo, idx) => (
+            <div key={idx} className="relative">
+              <img src={photo} alt={`Issue ${idx + 1}`} className="h-16 w-16 object-cover rounded-lg border border-red-300" />
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  onRemovePhoto(itemName, idx)
+                }}
+                className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+})
+
+ItemPhotoCapture.displayName = 'ItemPhotoCapture'
+
+// Inspection Item with Photo Prompt on Fail
+const InspectionItemWithPhoto = memo(({ item, register, control, itemPhotos, onAddPhoto, onRemovePhoto }) => {
+  const fieldValue = useWatch({ control, name: `inspection.${item.name}` })
+  const isFailed = fieldValue === 'Fail'
+  const photos = itemPhotos[item.name] || []
 
   return (
     <div className={`py-3 border-b border-gray-200 ${isFailed ? 'bg-red-50 -mx-4 px-4' : ''}`}>
@@ -95,50 +152,19 @@ const InspectionItemWithPhoto = ({ item, register, control, itemPhotos, setItemP
 
       {/* Photo prompt when failed */}
       {isFailed && (
-        <div className="mt-3 p-3 bg-red-100 rounded-lg border border-red-200">
-          <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle className="w-4 h-4 text-red-600" />
-            <span className="text-sm font-medium text-red-700">Photo required for failed item</span>
-          </div>
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={handlePhotoCapture}
-            className="hidden"
-          />
-          {photos.length < 3 && (
-            <button
-              type="button"
-              onClick={() => inputRef.current?.click()}
-              className="flex items-center gap-2 px-3 py-2 bg-white border border-red-300 rounded-lg text-red-700 hover:bg-red-50 transition-colors"
-            >
-              <Camera className="w-4 h-4" />
-              <span className="text-sm">Take Photo of Issue ({photos.length}/3)</span>
-            </button>
-          )}
-          {photos.length > 0 && (
-            <div className="mt-2 flex gap-2">
-              {photos.map((photo, idx) => (
-                <div key={idx} className="relative">
-                  <img src={photo} alt={`Issue ${idx + 1}`} className="h-16 w-16 object-cover rounded-lg border border-red-300" />
-                  <button
-                    type="button"
-                    onClick={() => removePhoto(idx)}
-                    className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <ItemPhotoCapture
+          itemName={item.name}
+          itemLabel={item.label}
+          photos={photos}
+          onAddPhoto={onAddPhoto}
+          onRemovePhoto={onRemovePhoto}
+        />
       )}
     </div>
   )
-}
+})
+
+InspectionItemWithPhoto.displayName = 'InspectionItemWithPhoto'
 
 const ForkliftInspection = () => {
   const navigate = useNavigate()
@@ -152,6 +178,21 @@ const ForkliftInspection = () => {
       date: getTodayDate()
     }
   })
+
+  // Memoized callbacks for photo handling to prevent re-renders
+  const handleAddPhoto = useCallback((itemName, photoData) => {
+    setItemPhotos(prev => ({
+      ...prev,
+      [itemName]: [...(prev[itemName] || []), photoData].slice(0, 3)
+    }))
+  }, [])
+
+  const handleRemovePhoto = useCallback((itemName, index) => {
+    setItemPhotos(prev => ({
+      ...prev,
+      [itemName]: (prev[itemName] || []).filter((_, i) => i !== index)
+    }))
+  }, [])
 
   const onSubmit = async (data) => {
     if (!signature) {
@@ -266,7 +307,8 @@ const ForkliftInspection = () => {
                 register={register}
                 control={control}
                 itemPhotos={itemPhotos}
-                setItemPhotos={setItemPhotos}
+                onAddPhoto={handleAddPhoto}
+                onRemovePhoto={handleRemovePhoto}
               />
             ))}
           </div>
