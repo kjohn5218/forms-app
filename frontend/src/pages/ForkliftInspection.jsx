@@ -173,11 +173,37 @@ const ForkliftInspection = () => {
   const [signature, setSignature] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const { register, handleSubmit, control, formState: { errors } } = useForm({
+  const { register, handleSubmit, control, formState: { errors }, getValues } = useForm({
     defaultValues: {
       date: getTodayDate()
     }
   })
+
+  // Handle validation errors - show alert with missing items
+  const onError = (formErrors) => {
+    const missingFields = []
+
+    // Check basic fields
+    if (formErrors.terminal) missingFields.push('Terminal')
+    if (formErrors.operatorName) missingFields.push('Operator Name')
+    if (formErrors.forkliftId) missingFields.push('Forklift Number/ID')
+    if (formErrors.shift) missingFields.push('Shift')
+    if (formErrors.hourMeter) missingFields.push('Hour Meter Reading')
+    if (formErrors.safeToOperate) missingFields.push('Safe to Operate')
+
+    // Check inspection items
+    if (formErrors.inspection) {
+      const missingInspections = INSPECTION_ITEMS
+        .filter(item => formErrors.inspection[item.name])
+        .map(item => item.label)
+
+      if (missingInspections.length > 0) {
+        missingFields.push(`\nInspection Items:\n- ${missingInspections.join('\n- ')}`)
+      }
+    }
+
+    alert(`Please complete all required fields before submitting:\n\n${missingFields.join('\n')}`)
+  }
 
   // Memoized callbacks for photo handling to prevent re-renders
   const handleAddPhoto = useCallback((itemName, photoData) => {
@@ -259,7 +285,7 @@ const ForkliftInspection = () => {
     <div className="min-h-screen bg-gray-100">
       <FormHeader title="Forklift Inspection" gradient="from-orange-500 to-orange-600" />
 
-      <FormContainer onSubmit={handleSubmit(onSubmit)}>
+      <FormContainer onSubmit={handleSubmit(onSubmit, onError)}>
         <FormSection title="Basic Information">
           <DateInput
             label="Date"
