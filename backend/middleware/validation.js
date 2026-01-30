@@ -57,12 +57,13 @@ const schemas = {
   'observation': Joi.object({
     ...baseSchema,
     date: Joi.string().required(),
-    time: Joi.string().required(),
+    time: Joi.string().allow('').optional(),
     observerName: Joi.string().required(),
-    observationType: Joi.string().required(),
-    location: Joi.string().required(),
-    description: Joi.string().required(),
-    riskLevel: Joi.string().required(),
+    // General observation fields (optional for specialized forms)
+    observationType: Joi.string().allow('').optional(),
+    location: Joi.string().allow('').optional(),
+    description: Joi.string().allow('').optional(),
+    riskLevel: Joi.string().allow('').optional(),
     actionTaken: Joi.string().allow('').optional(),
     followUpRequired: Joi.string().optional(),
     // Safe behavior recognition fields
@@ -78,7 +79,36 @@ const schemas = {
     // Chemical safety fields
     chemicalName: Joi.string().allow('').optional(),
     sdsAvailable: Joi.string().allow('').optional(),
-    properStorage: Joi.string().allow('').optional()
+    properStorage: Joi.string().allow('').optional(),
+    // Specialized observation form fields
+    formSubtype: Joi.string().allow('').optional(),
+    result: Joi.string().allow('').optional(),
+    observation: Joi.object().optional(),
+    practical: Joi.object().optional(),
+    habits: Joi.object().optional(),
+    keys: Joi.object().optional(),
+    comments: Joi.string().allow('').optional(),
+    // Employee/Driver fields
+    employeeObserved: Joi.string().allow('').optional(),
+    driverName: Joi.string().allow('').optional(),
+    operatorName: Joi.string().allow('').optional(),
+    employeeName: Joi.string().allow('').optional(),
+    evaluatorName: Joi.string().allow('').optional(),
+    interviewerName: Joi.string().allow('').optional(),
+    // Equipment fields
+    truckNumber: Joi.string().allow('').optional(),
+    trailerNumber: Joi.string().allow('').optional(),
+    tractorNumber: Joi.string().allow('').optional(),
+    forkliftId: Joi.string().allow('').optional(),
+    equipmentNumber: Joi.string().allow('').optional(),
+    routeNumber: Joi.string().allow('').optional(),
+    // Load quality/hazmat fields
+    manifestNumber: Joi.string().allow('').optional(),
+    loadedAtTerminal: Joi.string().allow('').optional(),
+    loadPhoto: Joi.array().items(Joi.string()).optional(),
+    // STF Practical fields
+    tasksRequiringTraining: Joi.array().items(Joi.string()).optional(),
+    additionalNotes: Joi.string().allow('').optional()
   }),
 
   'load-quality-exception': Joi.object({
