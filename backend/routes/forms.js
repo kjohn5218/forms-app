@@ -10,7 +10,7 @@ const getSubmittedBy = (formType, data) => {
     case 'forklift-inspection':
       return data.operatorName
     case 'safety-event':
-      return data.reporterName
+      return `${data.firstName || ''} ${data.lastName || ''}`.trim() || 'Unknown'
     case 'observation':
       return data.observerName
     case 'load-quality-exception':

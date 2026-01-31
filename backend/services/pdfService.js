@@ -654,7 +654,357 @@ const generateObservationPDF = async (data) => {
       doc.fontSize(8)
         .fillColor('#999999')
         .text(
-          `Generated: ${new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' })} | CCFS LTL Logistics Safety Management System`,
+          `Generated: ${new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' })} | CCFS Safety Management System`,
+          50,
+          doc.page.height - 40,
+          { align: 'center', width: pageWidth }
+        )
+
+      doc.end()
+    } catch (error) {
+      reject(error)
+    }
+  })
+}
+
+// Body area labels for injury location
+const BODY_AREA_LABELS = {
+  '1': 'Head (Left Front)',
+  '2': 'Head (Right Front)',
+  '3': 'Neck (Front)',
+  '4': 'Right Shoulder/Chest',
+  '5': 'Left Shoulder/Chest',
+  '6': 'Right Upper Arm',
+  '7': 'Left Upper Arm',
+  '8': 'Right Forearm',
+  '9': 'Left Forearm',
+  '10': 'Right Hand',
+  '11': 'Left Hand',
+  '12': 'Right Upper Abdomen',
+  '13': 'Left Upper Abdomen',
+  '14': 'Right Lower Abdomen',
+  '15': 'Left Lower Abdomen',
+  '16': 'Groin',
+  '17': 'Right Upper Leg',
+  '18': 'Left Upper Leg',
+  '19': 'Right Lower Leg',
+  '20': 'Left Lower Leg',
+  '21': 'Right Foot',
+  '22': 'Left Foot',
+  '23': 'Head (Left Back)',
+  '24': 'Head (Right Back)',
+  '25': 'Neck (Back)',
+  '26': 'Right Shoulder (Back)',
+  '27': 'Left Shoulder (Back)',
+  '28': 'Right Upper Arm (Back)',
+  '29': 'Left Upper Arm (Back)',
+  '30': 'Right Forearm (Back)',
+  '31': 'Left Forearm (Back)',
+  '32': 'Right Hand (Back)',
+  '33': 'Left Hand (Back)',
+  '34': 'Upper Back (Right)',
+  '35': 'Upper Back (Left)',
+  '36': 'Mid Back (Right)',
+  '37': 'Mid Back (Left)',
+  '38': 'Right Buttock',
+  '39': 'Left Buttock',
+  '40': 'Right Upper Leg (Back)',
+  '41': 'Left Upper Leg (Back)',
+  '42': 'Right Lower Leg (Back)',
+  '43': 'Left Lower Leg (Back)',
+  '44': 'Right Heel',
+  '45': 'Left Heel'
+}
+
+const generateSafetyEventPDF = async (data) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({
+        size: 'LETTER',
+        margins: { top: 50, bottom: 50, left: 50, right: 50 }
+      })
+
+      const chunks = []
+      doc.on('data', chunk => chunks.push(chunk))
+      doc.on('end', () => resolve(Buffer.concat(chunks)))
+      doc.on('error', reject)
+
+      const pageWidth = doc.page.width - 100
+
+      // Helper function for section headers
+      const addSectionHeader = (title) => {
+        if (doc.y > 680) doc.addPage()
+        doc.fontSize(14)
+          .fillColor('#dc2626')
+          .font('Helvetica-Bold')
+          .text(title)
+        doc.moveDown(0.3)
+        doc.moveTo(50, doc.y).lineTo(pageWidth + 50, doc.y).stroke('#dc2626')
+        doc.moveDown(0.5)
+      }
+
+      // Helper function for label-value pairs
+      const addField = (label, value) => {
+        if (doc.y > 700) doc.addPage()
+        doc.fontSize(10)
+          .fillColor('#1e3a5f')
+          .font('Helvetica-Bold')
+          .text(label + ': ', { continued: true })
+          .fillColor('#333333')
+          .font('Helvetica')
+          .text(value || 'N/A')
+        doc.moveDown(0.3)
+      }
+
+      // Helper for checkbox lists
+      const addCheckboxList = (label, items) => {
+        if (!items || (Array.isArray(items) && items.length === 0)) return
+        if (doc.y > 680) doc.addPage()
+        doc.fontSize(10)
+          .fillColor('#1e3a5f')
+          .font('Helvetica-Bold')
+          .text(label + ':')
+        doc.moveDown(0.2)
+        const itemsArray = Array.isArray(items) ? items : [items]
+        itemsArray.forEach(item => {
+          doc.fontSize(9)
+            .fillColor('#333333')
+            .font('Helvetica')
+            .text('  • ' + item)
+        })
+        doc.moveDown(0.4)
+      }
+
+      // Header with date
+      doc.fontSize(10)
+        .fillColor('#666666')
+        .text(formatDate(data.dateOfEvent), { align: 'right' })
+
+      doc.moveDown(0.5)
+
+      // Title
+      doc.fontSize(22)
+        .fillColor('#dc2626')
+        .font('Helvetica-Bold')
+        .text('Safety Event Report', { align: 'center' })
+
+      doc.moveDown(0.3)
+
+      // Submission ID
+      doc.fontSize(10)
+        .fillColor('#999999')
+        .font('Helvetica')
+        .text(`Submission ID: ${data.submissionId}`, { align: 'center' })
+
+      doc.moveDown(1)
+
+      // Employee/Contractor Information
+      addSectionHeader('Employee/Contractor Information')
+      addField('Name', `${data.firstName || ''} ${data.lastName || ''}`.trim())
+      addField('Employee Number', data.employeeNumber)
+      addField('Phone Number', data.phoneNumber)
+
+      doc.moveDown(0.5)
+
+      // Event Information
+      addSectionHeader('Event Information')
+      addField('Date of Event', formatDate(data.dateOfEvent))
+      addField('Time of Event', data.timeOfEvent)
+      addField('Terminal', data.terminal)
+      addField('Event Location', data.eventLocation)
+      if (data.eventLocation === 'Other') {
+        addField('Other Location', data.otherLocation)
+      }
+
+      doc.moveDown(0.5)
+
+      // Event Types
+      addSectionHeader('Event Types')
+      addCheckboxList('Selected Event Types', data.eventTypes)
+
+      doc.moveDown(0.5)
+
+      // Vehicle Information
+      addSectionHeader('Vehicle Information')
+      addField('Tractor Number', data.tractorNumber)
+      addField('Trailer Number', data.trailerNumber)
+      addField('Vehicle Towed', data.vehicleTowed)
+      addCheckboxList('Vehicle Damage', data.vehicleDamage)
+      addField('Vehicle Location', data.vehicleLocation)
+      addField('Pro Number', data.proNumber)
+      addField('Shipper Name', data.shipperName)
+
+      // Hazardous Materials (if applicable)
+      const hasHazmat = data.eventTypes && data.eventTypes.includes('Hazardous materials spilled')
+      if (hasHazmat) {
+        doc.moveDown(0.5)
+        addSectionHeader('Hazardous Materials Information')
+        addField('ID Number', data.hazmatIdNumber)
+        addField('Proper Shipping Name', data.properShippingName)
+        addField('Technical Name', data.technicalName)
+        addField('Hazard Class', data.hazardClass)
+        addField('Packaging Group', data.packagingGroup)
+        addField('Quantity Released', data.quantityReleased)
+        addField('Packaging Description', data.packagingDescription)
+      }
+
+      doc.moveDown(0.5)
+
+      // Supervisor Contact
+      addSectionHeader('Supervisor Contact')
+      addField('Supervisor Contacted', data.supervisorContacted)
+      if (data.supervisorContacted === 'Yes') {
+        addField('Supervisor Name', `${data.supervisorFirstName || ''} ${data.supervisorLastName || ''}`.trim())
+      } else if (data.supervisorContacted === 'No') {
+        addField('Reason Not Contacted', data.supervisorNotContactedReason)
+      }
+      addField('CURA Contacted', data.curaContacted)
+
+      // DOT Inspection (if applicable)
+      const hasDOT = data.eventTypes && data.eventTypes.includes('DOT Inspection')
+      if (hasDOT) {
+        doc.moveDown(0.5)
+        addSectionHeader('DOT Inspection Details')
+        addField('Inspection Level', data.dotInspectionLevel)
+        addField('# of Violations', data.numberOfViolations)
+        addField('Out of Service', data.outOfService)
+      }
+
+      // Other Vehicle Information (if applicable)
+      const hasOtherVehicle = data.eventTypes && data.eventTypes.includes('Other vehicles involved')
+      if (hasOtherVehicle) {
+        doc.moveDown(0.5)
+        addSectionHeader('Other Vehicle (#2) Information')
+        addField('Make/Model', data.vehicle2MakeModel)
+        addField('License # and State', data.vehicle2License)
+        addField('VIN #', data.vehicle2Vin)
+        addField('Driver Name', data.vehicle2DriverName)
+        addField('Driver License #', data.vehicle2DriverLicense)
+        addField('Driver Phone', data.vehicle2DriverPhone)
+        addField('Owner/Company', data.vehicle2OwnerName)
+        addField('Insurance Company', data.vehicle2InsuranceCompany)
+        addField('Insurance Policy #', data.vehicle2InsurancePolicy)
+      }
+
+      // Property Damage (if applicable)
+      const hasPropertyDamage = data.eventTypes && data.eventTypes.includes('Property damage (other than vehicles)')
+      if (hasPropertyDamage) {
+        doc.moveDown(0.5)
+        addSectionHeader('Property Damage Information')
+        addField('Property Owner', data.propertyOwner)
+        addField('Phone #', data.propertyOwnerPhone)
+        addField('Insurance Company', data.propertyInsuranceCompany)
+        addField('Insurance Policy #', data.propertyInsurancePolicy)
+        addField('Damage Description', data.propertyDamageDescription)
+      }
+
+      // Witness Information
+      if (data.witnessName) {
+        doc.moveDown(0.5)
+        addSectionHeader('Witness Information')
+        addField('Witness Name', data.witnessName)
+        addField('Witness Phone', data.witnessPhone)
+        const witnessAddress = [
+          data.witnessStreet,
+          data.witnessStreet2,
+          `${data.witnessCity || ''} ${data.witnessState || ''} ${data.witnessZip || ''}`.trim()
+        ].filter(Boolean).join(', ')
+        if (witnessAddress) addField('Witness Address', witnessAddress)
+      }
+
+      // Scene Conditions
+      doc.moveDown(0.5)
+      addSectionHeader('Scene Conditions')
+      addCheckboxList('Character of Road', data.characterOfRoad)
+      addCheckboxList('Road Surface Condition', data.roadSurfaceCondition)
+      addCheckboxList('Weather', data.weather)
+      addCheckboxList('Light Conditions', data.lightConditions)
+      addCheckboxList('Control Device', data.controlDevice)
+      addCheckboxList('Type of Collision', data.collisionType)
+      addCheckboxList('Highway Type', data.highwayType)
+      addField('Speed at Time of Event', data.speedAtEvent)
+
+      // Incident Description
+      doc.moveDown(0.5)
+      addSectionHeader('Incident Description')
+      doc.fontSize(10)
+        .fillColor('#333333')
+        .font('Helvetica')
+        .text(data.employeeStatement || 'No statement provided', {
+          width: pageWidth,
+          align: 'left'
+        })
+
+      // First Report of Injury (if applicable)
+      const hasInjury = data.eventTypes && data.eventTypes.includes('Illness or injury to self')
+      if (hasInjury) {
+        doc.addPage()
+        addSectionHeader('First Report of Injury')
+        addField('Employee Sex', data.employeeSex)
+        addField('Employee Department', data.employeeDepartment)
+        addField('Work Status', data.employeeWorkStatus)
+        addField('Months with Employer', data.monthsWithEmployer)
+        addField('Job Title at Time of Event', data.jobTitleAtEvent)
+        addField('Months in Job', data.monthsInJob)
+        addField('Work Day Part', data.workDayPart)
+
+        // Body Areas Affected
+        doc.moveDown(0.5)
+        addSectionHeader('Body Areas Affected')
+
+        const frontAreas = data.bodyAreasFront || []
+        const backAreas = data.bodyAreasBack || []
+        const allAreas = [...(Array.isArray(frontAreas) ? frontAreas : [frontAreas]), ...(Array.isArray(backAreas) ? backAreas : [backAreas])].filter(Boolean)
+
+        if (allAreas.length > 0) {
+          const areaLabels = allAreas.map(area => `Area ${area}: ${BODY_AREA_LABELS[area] || 'Unknown'}`)
+          addCheckboxList('Affected Areas', areaLabels)
+        } else {
+          doc.fontSize(10)
+            .fillColor('#666666')
+            .font('Helvetica-Oblique')
+            .text('No body areas selected')
+          doc.moveDown(0.3)
+        }
+
+        // Nature of Injury
+        doc.moveDown(0.5)
+        addSectionHeader('Nature of Injury')
+        addCheckboxList('Injury Type(s)', data.injuryNature)
+
+        // Treatment Information
+        doc.moveDown(0.5)
+        addSectionHeader('Treatment Information')
+        addField('Sought Medical Treatment', data.soughtMedicalTreatment)
+        if (data.soughtMedicalTreatment === 'Yes') {
+          addField('Medical Facility Name', data.medicalFacilityName)
+          addField('Medical Facility Address', data.medicalFacilityAddress)
+        }
+        addField('Left Work Due to Injury', data.leftWorkDueToInjury)
+      }
+
+      // Event Evaluation
+      doc.moveDown(0.5)
+      addSectionHeader('Event Evaluation')
+      addCheckboxList('Unsafe Work Conditions', data.unsafeConditions)
+      addCheckboxList('Unsafe Acts by People', data.unsafeActs)
+
+      if (data.whyUnsafeExist) {
+        addField('Why Unsafe Conditions/Acts Exist', data.whyUnsafeExist)
+      }
+
+      addField('Factors Encouraged Unsafe Behavior', data.factorsEncouraged)
+      if (data.factorsEncouraged === 'Yes' && data.factorsDescription) {
+        addField('Factor Description', data.factorsDescription)
+      }
+      addField('Unsafe Acts/Conditions Reported Prior', data.priorReported)
+      addField('Similar Events or Near Misses Prior', data.similarEventsPrior)
+
+      // Footer
+      doc.fontSize(8)
+        .fillColor('#999999')
+        .text(
+          `Generated: ${new Date().toLocaleString('en-US', { timeZone: 'America/Chicago' })} | CCFS Safety Management System`,
           50,
           doc.page.height - 40,
           { align: 'center', width: pageWidth }
@@ -669,5 +1019,6 @@ const generateObservationPDF = async (data) => {
 
 module.exports = {
   generateLoadQualityExceptionPDF,
-  generateObservationPDF
+  generateObservationPDF,
+  generateSafetyEventPDF
 }

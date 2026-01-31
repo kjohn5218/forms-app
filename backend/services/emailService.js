@@ -1,5 +1,5 @@
 const { SESClient, SendEmailCommand, SendRawEmailCommand } = require('@aws-sdk/client-ses')
-const { generateLoadQualityExceptionPDF, generateObservationPDF } = require('./pdfService')
+const { generateLoadQualityExceptionPDF, generateObservationPDF, generateSafetyEventPDF } = require('./pdfService')
 
 // Initialize SES client
 const sesClient = new SESClient({
@@ -423,7 +423,7 @@ PHOTOS ATTACHED: ${totalPhotos} photo(s) of failed items
 
 ---
 This notification was automatically generated because one or more inspection items failed.
-CCFS LTL Logistics Safety Management System
+CCFS Safety Management System
 `
 
     // Skip if AWS credentials not configured
@@ -551,7 +551,7 @@ RESULT: ${result}
 Please see the attached PDF for the complete observation details.
 
 ---
-CCFS LTL Logistics Safety Management System
+CCFS Safety Management System
 `
 
     // Generate PDF
@@ -598,11 +598,124 @@ CCFS LTL Logistics Safety Management System
   }
 }
 
+// Send safety event report with PDF to safety@ccfs.com
+const sendSafetyEventEmail = async (data) => {
+  try {
+    const recipients = [SAFETY_EMAIL]
+
+    const employeeName = `${data.firstName || ''} ${data.lastName || ''}`.trim() || 'Unknown'
+    const terminal = data.terminal || 'N/A'
+    const eventTypes = Array.isArray(data.eventTypes) ? data.eventTypes.join(', ') : (data.eventTypes || 'N/A')
+
+    // Determine urgency level
+    const hasInjury = data.eventTypes && data.eventTypes.includes('Illness or injury to self')
+    const hasHazmat = data.eventTypes && data.eventTypes.includes('Hazardous materials spilled')
+    const isUrgent = hasInjury || hasHazmat
+
+    const urgencyPrefix = isUrgent ? (hasInjury ? '[URGENT - INJURY REPORT]' : '[URGENT - HAZMAT]') : '[PRIORITY]'
+    const subject = `${urgencyPrefix} Safety Event Report - ${terminal} - ${data.submissionId}`
+
+    const submittedAt = new Date().toLocaleString('en-US', {
+      timeZone: 'America/Chicago',
+      dateStyle: 'full',
+      timeStyle: 'short'
+    })
+
+    const emailBody = `
+SAFETY EVENT REPORT
+===================
+
+Submission ID: ${data.submissionId}
+Terminal: ${terminal}
+Date of Event: ${data.dateOfEvent}
+Time of Event: ${data.timeOfEvent}
+Submitted: ${submittedAt}
+
+EMPLOYEE INFORMATION:
+- Name: ${employeeName}
+- Employee Number: ${data.employeeNumber || 'N/A'}
+- Phone: ${data.phoneNumber || 'N/A'}
+
+EVENT TYPES:
+${eventTypes}
+
+EVENT LOCATION: ${data.eventLocation}${data.eventLocation === 'Other' ? ` - ${data.otherLocation}` : ''}
+
+SUPERVISOR CONTACTED: ${data.supervisorContacted || 'N/A'}
+${data.supervisorContacted === 'Yes' ? `Supervisor: ${data.supervisorFirstName || ''} ${data.supervisorLastName || ''}` : ''}
+${data.supervisorContacted === 'No' ? `Reason: ${data.supervisorNotContactedReason || 'Not specified'}` : ''}
+
+CURA CONTACTED: ${data.curaContacted || 'N/A'}
+
+${hasInjury ? `
+INJURY DETAILS:
+- Medical Treatment Sought: ${data.soughtMedicalTreatment || 'N/A'}
+- Left Work Due to Injury: ${data.leftWorkDueToInjury || 'N/A'}
+` : ''}
+
+EMPLOYEE STATEMENT:
+${data.employeeStatement || 'No statement provided'}
+
+Please see the attached PDF for the complete Safety Event Report with all details.
+
+---
+CCFS Safety Management System
+`
+
+    // Generate PDF
+    console.log('Generating PDF for safety event report...')
+    const pdfBuffer = await generateSafetyEventPDF(data)
+    const pdfFilename = `Safety_Event_Report_${data.submissionId}.pdf`
+    console.log(`PDF generated: ${pdfFilename} (${pdfBuffer.length} bytes)`)
+
+    // Skip if AWS credentials not configured
+    if (!process.env.AWS_ACCESS_KEY_ID) {
+      console.log('AWS credentials not configured - skipping safety event email')
+      console.log('Would have sent safety event email to:', recipients)
+      console.log('Subject:', subject)
+      console.log('PDF attachment:', pdfFilename)
+      return { success: true, skipped: true, recipients: recipients, pdfSize: pdfBuffer.length }
+    }
+
+    // Apply email override if configured
+    const finalRecipients = applyEmailOverride(recipients)
+
+    // Build MIME message with PDF attachment
+    const mimeMessage = buildMimeMessage(
+      FROM_EMAIL,
+      finalRecipients,
+      subject,
+      emailBody,
+      pdfBuffer,
+      pdfFilename
+    )
+
+    const command = new SendRawEmailCommand({
+      RawMessage: {
+        Data: Buffer.from(mimeMessage)
+      }
+    })
+
+    await sesClient.send(command)
+    console.log(`Safety event email with PDF sent to: ${finalRecipients.join(', ')}`)
+    return { success: true, recipients: finalRecipients }
+
+  } catch (error) {
+    console.error('Error sending safety event email:', error)
+    return { success: false, error: error.message }
+  }
+}
+
 const sendFormNotification = async (formType, data) => {
   try {
     // Special handling for load quality exception - send to service centers with PDF
     if (formType === 'load-quality-exception') {
       return await sendLoadQualityExceptionEmail(data)
+    }
+
+    // Special handling for safety event - send PDF to safety@ccfs.com
+    if (formType === 'safety-event') {
+      return await sendSafetyEventEmail(data)
     }
 
     // Special handling for observation forms - send PDF to observer email and safety
@@ -668,5 +781,6 @@ module.exports = {
   getServiceCenterEmail,
   SERVICE_CENTER_EMAIL_DOMAIN,
   sendForkliftFailureNotification,
-  hasForkliftInspectionFailures
+  hasForkliftInspectionFailures,
+  sendSafetyEventEmail
 }
