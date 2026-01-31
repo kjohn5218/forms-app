@@ -193,32 +193,34 @@ const SafetyEvent = () => {
   const hasVehicleTowed = hasEventType('Vehicle(s) towed')
   const hasOther = hasEventType('Other')
 
-  // Determine if ONLY "Dock Incident" is selected (hide vehicle/scene sections)
+  // Determine if ONLY "Dock Incident" is selected (hide most sections)
   const onlyDockIncident = hasDockIncident && eventTypes.length === 1
 
-  // Show Vehicle Information when NOT only Dock Incident, or when specific events are selected
-  const showVehicleInfo = !onlyDockIncident && (
-    hasLawEnforcement || hasOtherVehicles || hasVehicleTowed || hasDOTInspection || hasHazmat || hasOther ||
-    hasPropertyDamage || hasInjuriesToOthers || eventTypes.length === 0
-  )
+  // Show Company Vehicle Information - shown for vehicle-related events
+  // Per screenshots: Law enforcement, Other vehicles, Vehicle towed, Property damage, Hazmat
+  const showVehicleInfo = hasLawEnforcement || hasOtherVehicles || hasVehicleTowed || hasPropertyDamage
 
-  // Show Other Vehicle (#2) Information
+  // Show Other Vehicle (#2) Information - shown for law enforcement or other vehicles involved
   const showOtherVehicleInfo = hasLawEnforcement || hasOtherVehicles
 
-  // Show Witness Information
-  const showWitnessInfo = hasLawEnforcement || hasInjury || hasInjuriesToOthers
+  // Show Witness Information - shown for most event types except Dock Incident alone
+  // Per screenshots: Law enforcement, Illness/injury, Property damage, Other vehicles, Vehicle towed, Other
+  const showWitnessInfo = hasLawEnforcement || hasInjury || hasInjuriesToOthers ||
+    hasPropertyDamage || hasOtherVehicles || hasVehicleTowed || hasOther
 
-  // Show Scene Conditions (Analysis) - hide when only Dock Incident
-  const showSceneConditions = !onlyDockIncident && (
-    hasLawEnforcement || hasOtherVehicles || hasVehicleTowed || hasOther ||
-    hasInjuriesToOthers || hasPropertyDamage
-  )
+  // Show Scene Conditions (Analysis) - for vehicle/accident related events
+  // Per screenshots: Law enforcement, Other vehicles, Vehicle towed, Other, Property damage
+  // NOT shown for: Dock Incident alone, Illness/injury to self alone
+  const showSceneConditions = hasLawEnforcement || hasOtherVehicles || hasVehicleTowed ||
+    hasOther || hasPropertyDamage
 
-  // Show Incident Description
+  // Show Incident Description - shown for most event types
+  // Per screenshots: Law enforcement, Illness/injury, Other vehicles, Property damage, Vehicle towed, Other
   const showIncidentDescription = hasLawEnforcement || hasInjury || hasInjuriesToOthers ||
     hasOtherVehicles || hasPropertyDamage || hasVehicleTowed || hasOther || hasDOTInspection || hasHazmat
 
-  // Show Event Evaluation section
+  // Show Event Evaluation section - only for injury events
+  // Per screenshots: Illness or injury to self
   const showEventEvaluation = hasInjury || hasInjuriesToOthers
 
   const onSubmit = async (data) => {
