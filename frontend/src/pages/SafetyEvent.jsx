@@ -200,11 +200,15 @@ const SafetyEvent = () => {
   const unsafeActs = watch('unsafeActs') || []
 
   // Show Company Vehicle Information - shown for vehicle-related events
-  // Per screenshots: Law enforcement, Other vehicles, Vehicle towed, Property damage
-  const showVehicleInfo = hasLawEnforcement || hasOtherVehicles || hasVehicleTowed || hasPropertyDamage
+  // Per screenshots: Law enforcement, Other vehicles, Vehicle towed, Property damage, Injuries to others, DOT Inspection
+  const showVehicleInfo = hasLawEnforcement || hasOtherVehicles || hasVehicleTowed ||
+    hasPropertyDamage || hasInjuriesToOthers || hasDOTInspection
 
-  // Show Other Vehicle (#2) Information - shown for law enforcement, other vehicles, OR vehicle towed
-  const showOtherVehicleInfo = hasLawEnforcement || hasOtherVehicles || hasVehicleTowed
+  // Show Other Vehicle (#2) Information - shown for law enforcement, other vehicles, vehicle towed, OR injuries to others
+  const showOtherVehicleInfo = hasLawEnforcement || hasOtherVehicles || hasVehicleTowed || hasInjuriesToOthers
+
+  // Show Shipment Information (Pro Number, Shipper Name) - shown for Hazardous materials
+  const showShipmentInfo = hasHazmat
 
   // Show Witness Information - shown for ALL event types including Dock Incident
   // Per screenshot: Dock Incident shows Witness Info
@@ -212,10 +216,10 @@ const SafetyEvent = () => {
     hasPropertyDamage || hasOtherVehicles || hasVehicleTowed || hasOther || hasDOTInspection || hasHazmat
 
   // Show Scene Conditions (Analysis) - for vehicle/accident related events
-  // Per screenshots: Law enforcement, Other vehicles, Vehicle towed, Other, Property damage
-  // NOT shown for: Dock Incident alone, Illness/injury to self alone
+  // Per screenshots: Law enforcement, Other vehicles, Vehicle towed, Other, Property damage, Injuries to others
+  // NOT shown for: Dock Incident alone, Illness/injury to self alone, DOT Inspection alone, Hazmat alone
   const showSceneConditions = hasLawEnforcement || hasOtherVehicles || hasVehicleTowed ||
-    hasOther || hasPropertyDamage
+    hasOther || hasPropertyDamage || hasInjuriesToOthers
 
   // Show Incident Description - shown for ALL event types including Dock Incident
   // Per screenshot: Dock Incident shows Incident Description
@@ -398,6 +402,12 @@ const SafetyEvent = () => {
               register={register}
               errors={errors}
             />
+          </FormSection>
+        )}
+
+        {/* Shipment Information - Conditional (for Hazmat) */}
+        {showShipmentInfo && (
+          <FormSection title="Shipment Information">
             <TextInput
               label="Pro Number"
               name="proNumber"
