@@ -174,16 +174,52 @@ const SafetyEvent = () => {
 
   const eventTypes = watch('eventTypes') || []
   const eventLocation = watch('eventLocation')
-  const vehicleTowed = watch('vehicleTowed')
   const supervisorContacted = watch('supervisorContacted')
-  const curaContacted = watch('curaContacted')
-  const hasInjury = eventTypes.includes?.('Illness or injury to self') || false
-  const hasDOTInspection = eventTypes.includes?.('DOT Inspection') || false
-  const hasHazmat = eventTypes.includes?.('Hazardous materials spilled') || false
-  const hasOtherVehicles = eventTypes.includes?.('Other vehicles involved') || false
-  const hasPropertyDamage = eventTypes.includes?.('Property damage (other than vehicles)') || false
   const soughtMedicalTreatment = watch('soughtMedicalTreatment')
   const factorsEncouraged = watch('factorsEncouraged')
+
+  // Helper to check if array includes a value (handles both array and single value)
+  const hasEventType = (type) => Array.isArray(eventTypes) ? eventTypes.includes(type) : eventTypes === type
+
+  // Event type checks
+  const hasDockIncident = hasEventType('Dock Incident')
+  const hasDOTInspection = hasEventType('DOT Inspection')
+  const hasHazmat = hasEventType('Hazardous materials spilled')
+  const hasInjury = hasEventType('Illness or injury to self')
+  const hasInjuriesToOthers = hasEventType('Injuries to others involved')
+  const hasLawEnforcement = hasEventType('Law enforcement or emergency services called')
+  const hasPropertyDamage = hasEventType('Property damage (other than vehicles)')
+  const hasOtherVehicles = hasEventType('Other vehicles involved')
+  const hasVehicleTowed = hasEventType('Vehicle(s) towed')
+  const hasOther = hasEventType('Other')
+
+  // Determine if ONLY "Dock Incident" is selected (hide vehicle/scene sections)
+  const onlyDockIncident = hasDockIncident && eventTypes.length === 1
+
+  // Show Vehicle Information when NOT only Dock Incident, or when specific events are selected
+  const showVehicleInfo = !onlyDockIncident && (
+    hasLawEnforcement || hasOtherVehicles || hasVehicleTowed || hasDOTInspection || hasHazmat || hasOther ||
+    hasPropertyDamage || hasInjuriesToOthers || eventTypes.length === 0
+  )
+
+  // Show Other Vehicle (#2) Information
+  const showOtherVehicleInfo = hasLawEnforcement || hasOtherVehicles
+
+  // Show Witness Information
+  const showWitnessInfo = hasLawEnforcement || hasInjury || hasInjuriesToOthers
+
+  // Show Scene Conditions (Analysis) - hide when only Dock Incident
+  const showSceneConditions = !onlyDockIncident && (
+    hasLawEnforcement || hasOtherVehicles || hasVehicleTowed || hasOther ||
+    hasInjuriesToOthers || hasPropertyDamage
+  )
+
+  // Show Incident Description
+  const showIncidentDescription = hasLawEnforcement || hasInjury || hasInjuriesToOthers ||
+    hasOtherVehicles || hasPropertyDamage || hasVehicleTowed || hasOther || hasDOTInspection || hasHazmat
+
+  // Show Event Evaluation section
+  const showEventEvaluation = hasInjury || hasInjuriesToOthers
 
   const onSubmit = async (data) => {
     setIsSubmitting(true)
@@ -319,52 +355,54 @@ const SafetyEvent = () => {
           </div>
         </FormSection>
 
-        {/* Vehicle Information */}
-        <FormSection title="Vehicle Information">
-          <TextInput
-            label="Tractor Number (Power Unit)"
-            name="tractorNumber"
-            register={register}
-            errors={errors}
-          />
-          <TextInput
-            label="Trailer Number (Trailer 1)"
-            name="trailerNumber"
-            register={register}
-            errors={errors}
-          />
-          <RadioGroup
-            label="Vehicle towed from scene"
-            name="vehicleTowed"
-            register={register}
-            errors={errors}
-            options={['Yes', 'No']}
-          />
-          <CheckboxGroup
-            label="Vehicle Damage"
-            name="vehicleDamage"
-            register={register}
-            options={VEHICLE_DAMAGE_OPTIONS}
-          />
-          <TextInput
-            label="Vehicle can be seen at"
-            name="vehicleLocation"
-            register={register}
-            errors={errors}
-          />
-          <TextInput
-            label="Pro Number"
-            name="proNumber"
-            register={register}
-            errors={errors}
-          />
-          <TextInput
-            label="Shipper Name"
-            name="shipperName"
-            register={register}
-            errors={errors}
-          />
-        </FormSection>
+        {/* Vehicle Information - Conditional */}
+        {showVehicleInfo && (
+          <FormSection title="Company Vehicle Information">
+            <TextInput
+              label="Tractor Number (Power Unit)"
+              name="tractorNumber"
+              register={register}
+              errors={errors}
+            />
+            <TextInput
+              label="Trailer Number (Trailer 1)"
+              name="trailerNumber"
+              register={register}
+              errors={errors}
+            />
+            <RadioGroup
+              label="Vehicle towed from scene"
+              name="vehicleTowed"
+              register={register}
+              errors={errors}
+              options={['Yes', 'No']}
+            />
+            <CheckboxGroup
+              label="Vehicle Damage"
+              name="vehicleDamage"
+              register={register}
+              options={VEHICLE_DAMAGE_OPTIONS}
+            />
+            <TextInput
+              label="Vehicle can be seen at"
+              name="vehicleLocation"
+              register={register}
+              errors={errors}
+            />
+            <TextInput
+              label="Pro Number"
+              name="proNumber"
+              register={register}
+              errors={errors}
+            />
+            <TextInput
+              label="Shipper Name"
+              name="shipperName"
+              register={register}
+              errors={errors}
+            />
+          </FormSection>
+        )}
 
         {/* Hazardous Materials Section - Conditional */}
         {hasHazmat && (
@@ -505,7 +543,7 @@ const SafetyEvent = () => {
         )}
 
         {/* Other Vehicle Information - Conditional */}
-        {hasOtherVehicles && (
+        {showOtherVehicleInfo && (
           <FormSection title="Other Vehicle (#2) Information">
             <TextInput
               label="Vehicle #2 Make/Model"
@@ -657,146 +695,154 @@ const SafetyEvent = () => {
           </FormSection>
         )}
 
-        {/* Witness Information */}
-        <FormSection title="Witness Information">
-          <TextInput
-            label="Witness Name"
-            name="witnessName"
-            register={register}
-            errors={errors}
-          />
-          <TextInput
-            label="Witness Phone"
-            name="witnessPhone"
-            type="tel"
-            register={register}
-            errors={errors}
-          />
-          <h4 className="font-medium text-gray-700 mt-4 mb-2">Witness Address</h4>
-          <TextInput
-            label="Street Address"
-            name="witnessStreet"
-            register={register}
-            errors={errors}
-          />
-          <TextInput
-            label="Street Address Line 2"
-            name="witnessStreet2"
-            register={register}
-            errors={errors}
-          />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Witness Information - Conditional */}
+        {showWitnessInfo && (
+          <FormSection title="Witness Information">
             <TextInput
-              label="City"
-              name="witnessCity"
+              label="Witness"
+              name="witnessName"
               register={register}
               errors={errors}
             />
             <TextInput
-              label="State/Province"
-              name="witnessState"
+              label="Witness Phone"
+              name="witnessPhone"
+              type="tel"
+              register={register}
+              errors={errors}
+            />
+            <h4 className="font-medium text-gray-700 mt-4 mb-2">Address</h4>
+            <TextInput
+              label="Street Address"
+              name="witnessStreet"
               register={register}
               errors={errors}
             />
             <TextInput
-              label="Postal/Zip Code"
-              name="witnessZip"
+              label="Street Address Line 2"
+              name="witnessStreet2"
               register={register}
               errors={errors}
             />
-          </div>
-        </FormSection>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <TextInput
+                label="City"
+                name="witnessCity"
+                register={register}
+                errors={errors}
+              />
+              <TextInput
+                label="State/Province"
+                name="witnessState"
+                register={register}
+                errors={errors}
+              />
+              <TextInput
+                label="Postal/Zip Code"
+                name="witnessZip"
+                register={register}
+                errors={errors}
+              />
+            </div>
+          </FormSection>
+        )}
 
-        {/* Road and Scene Conditions */}
-        <FormSection title="Scene Conditions">
-          <CheckboxGroup
-            label="Character of Road"
-            name="characterOfRoad"
-            register={register}
-            options={CHARACTER_OF_ROAD}
-          />
-          <CheckboxGroup
-            label="Road Surface Condition"
-            name="roadSurfaceCondition"
-            register={register}
-            options={ROAD_SURFACE_CONDITIONS}
-          />
-          <CheckboxGroup
-            label="Weather"
-            name="weather"
-            register={register}
-            options={WEATHER_CONDITIONS}
-          />
-          <CheckboxGroup
-            label="Light"
-            name="lightConditions"
-            register={register}
-            options={LIGHT_CONDITIONS}
-          />
-          <CheckboxGroup
-            label="Control Device"
-            name="controlDevice"
-            register={register}
-            options={CONTROL_DEVICES}
-          />
-          <CheckboxGroup
-            label="Type of Collision"
-            name="collisionType"
-            register={register}
-            options={COLLISION_TYPES}
-          />
-          <CheckboxGroup
-            label="Highway Type"
-            name="highwayType"
-            register={register}
-            options={HIGHWAY_TYPES}
-          />
-          <RadioGroup
-            label="Speed at the time of event"
-            name="speedAtEvent"
-            register={register}
-            errors={errors}
-            options={SPEED_OPTIONS}
-          />
-        </FormSection>
+        {/* Road and Scene Conditions - Conditional */}
+        {showSceneConditions && (
+          <FormSection title="Analysis">
+            <CheckboxGroup
+              label="Character of Road"
+              name="characterOfRoad"
+              register={register}
+              options={CHARACTER_OF_ROAD}
+            />
+            <CheckboxGroup
+              label="Road Surface Condition"
+              name="roadSurfaceCondition"
+              register={register}
+              options={ROAD_SURFACE_CONDITIONS}
+            />
+            <CheckboxGroup
+              label="Weather"
+              name="weather"
+              register={register}
+              options={WEATHER_CONDITIONS}
+            />
+            <CheckboxGroup
+              label="Light"
+              name="lightConditions"
+              register={register}
+              options={LIGHT_CONDITIONS}
+            />
+            <CheckboxGroup
+              label="Control Device"
+              name="controlDevice"
+              register={register}
+              options={CONTROL_DEVICES}
+            />
+            <CheckboxGroup
+              label="Type of Collision"
+              name="collisionType"
+              register={register}
+              options={COLLISION_TYPES}
+            />
+            <CheckboxGroup
+              label="Highway Type"
+              name="highwayType"
+              register={register}
+              options={HIGHWAY_TYPES}
+            />
+            <RadioGroup
+              label="Speed at the time of event"
+              name="speedAtEvent"
+              register={register}
+              errors={errors}
+              options={SPEED_OPTIONS}
+            />
+          </FormSection>
+        )}
 
-        {/* Incident Description */}
-        <FormSection title="Incident Description">
-          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-blue-800 text-sm">
-              Please provide a detailed description of what occurred (include people, equipment type,
-              how the incident occurred, if any reckless behavior was observed, how hazardous materials
-              were cleaned up, etc. Be as detailed as possible).
-            </p>
-          </div>
-          <TextArea
-            label="Employee Written Statement"
-            name="employeeStatement"
-            register={register}
-            errors={errors}
-            required
-            rows={6}
-            minLength={50}
-            placeholder="Please provide a detailed description of the event..."
-          />
-        </FormSection>
+        {/* Incident Description - Conditional */}
+        {showIncidentDescription && (
+          <FormSection title="Incident Description">
+            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-blue-800 text-sm">
+                Please provide a detailed description of what occurred (include people, equipment type,
+                how the incident occurred, if any reckless behavior was observed, how hazardous materials
+                were cleaned up, etc. Be as detailed as possible).
+              </p>
+            </div>
+            <TextArea
+              label="Employee Written Statement (or record statement below)"
+              name="employeeStatement"
+              register={register}
+              errors={errors}
+              required
+              rows={6}
+              minLength={50}
+              placeholder="Please provide a detailed description of the event..."
+            />
+          </FormSection>
+        )}
 
-        {/* Photos */}
-        <FormSection title="Photos">
-          <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-            <p className="text-gray-700 text-sm">
-              Document any vehicle or property damage, along with scene and company equipment involved.
-              A minimum of five photos are required.
-            </p>
-          </div>
-          <PhotoUpload
-            label="Event Photos"
-            name="photos"
-            photos={photos}
-            setPhotos={setPhotos}
-            maxPhotos={20}
-          />
-        </FormSection>
+        {/* Photos - Conditional */}
+        {showIncidentDescription && (
+          <FormSection title="Photos">
+            <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+              <p className="text-gray-700 text-sm">
+                Document any vehicle or property damage, along with scene and company equipment involved.
+                A minimum of five photos are required.
+              </p>
+            </div>
+            <PhotoUpload
+              label="Event Photos"
+              name="photos"
+              photos={photos}
+              setPhotos={setPhotos}
+              maxPhotos={20}
+            />
+          </FormSection>
+        )}
 
         {/* First Report of Injury - Conditional */}
         {hasInjury && (
@@ -1046,58 +1092,60 @@ const SafetyEvent = () => {
           </>
         )}
 
-        {/* Event Evaluation */}
-        <FormSection title="Event Evaluation">
-          <CheckboxGroup
-            label="Unsafe work condition(s) (Check all that apply)"
-            name="unsafeConditions"
-            register={register}
-            options={UNSAFE_CONDITIONS}
-          />
-          <CheckboxGroup
-            label="Unsafe act(s) by people (Check all that apply)"
-            name="unsafeActs"
-            register={register}
-            options={UNSAFE_ACTS}
-          />
-          <TextArea
-            label="Why did the unsafe conditions/acts exist?"
-            name="whyUnsafeExist"
-            register={register}
-            errors={errors}
-            rows={4}
-          />
-          <RadioGroup
-            label='Are there factors (such as "the job can be done more quickly" or "the product is less likely to be damaged") that may have encouraged the unsafe conditions or acts?'
-            name="factorsEncouraged"
-            register={register}
-            errors={errors}
-            options={['Yes', 'No']}
-          />
-          {factorsEncouraged === 'Yes' && (
+        {/* Event Evaluation - Conditional (for injuries) */}
+        {showEventEvaluation && (
+          <FormSection title="Event Evaluation">
+            <CheckboxGroup
+              label="Unsafe work condition(s) (Check all that apply)"
+              name="unsafeConditions"
+              register={register}
+              options={UNSAFE_CONDITIONS}
+            />
+            <CheckboxGroup
+              label="Unsafe act(s) by people (Check all that apply)"
+              name="unsafeActs"
+              register={register}
+              options={UNSAFE_ACTS}
+            />
             <TextArea
-              label="Please describe"
-              name="factorsDescription"
+              label="Why did the unsafe conditions/acts exist?"
+              name="whyUnsafeExist"
               register={register}
               errors={errors}
-              rows={3}
+              rows={4}
             />
-          )}
-          <RadioGroup
-            label="Were the unsafe acts or conditions reported prior to the event?"
-            name="priorReported"
-            register={register}
-            errors={errors}
-            options={['Yes', 'No', 'Unknown']}
-          />
-          <RadioGroup
-            label="Have there been similar events or near misses prior to this one?"
-            name="similarEventsPrior"
-            register={register}
-            errors={errors}
-            options={['Yes', 'No', 'Unknown']}
-          />
-        </FormSection>
+            <RadioGroup
+              label='Are there factors (such as "the job can be done more quickly" or "the product is less likely to be damaged") that may have encouraged the unsafe conditions or acts?'
+              name="factorsEncouraged"
+              register={register}
+              errors={errors}
+              options={['Yes', 'No']}
+            />
+            {factorsEncouraged === 'Yes' && (
+              <TextArea
+                label="Please describe"
+                name="factorsDescription"
+                register={register}
+                errors={errors}
+                rows={3}
+              />
+            )}
+            <RadioGroup
+              label="Were the unsafe acts or conditions reported prior to the event?"
+              name="priorReported"
+              register={register}
+              errors={errors}
+              options={['Yes', 'No', 'Unknown']}
+            />
+            <RadioGroup
+              label="Have there been similar events or near misses prior to this one?"
+              name="similarEventsPrior"
+              register={register}
+              errors={errors}
+              options={['Yes', 'No', 'Unknown']}
+            />
+          </FormSection>
+        )}
 
         {/* Treatment Information - Conditional */}
         {hasInjury && (
