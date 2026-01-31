@@ -193,20 +193,23 @@ const SafetyEvent = () => {
   const hasVehicleTowed = hasEventType('Vehicle(s) towed')
   const hasOther = hasEventType('Other')
 
-  // Determine if ONLY "Dock Incident" is selected (hide most sections)
-  const onlyDockIncident = hasDockIncident && eventTypes.length === 1
+  // Additional watched fields for conditional logic
+  const isDriverOwner = watch('isDriverOwner')
+  const leftWorkDueToInjury = watch('leftWorkDueToInjury')
+  const unsafeConditions = watch('unsafeConditions') || []
+  const unsafeActs = watch('unsafeActs') || []
 
   // Show Company Vehicle Information - shown for vehicle-related events
-  // Per screenshots: Law enforcement, Other vehicles, Vehicle towed, Property damage, Hazmat
+  // Per screenshots: Law enforcement, Other vehicles, Vehicle towed, Property damage
   const showVehicleInfo = hasLawEnforcement || hasOtherVehicles || hasVehicleTowed || hasPropertyDamage
 
-  // Show Other Vehicle (#2) Information - shown for law enforcement or other vehicles involved
-  const showOtherVehicleInfo = hasLawEnforcement || hasOtherVehicles
+  // Show Other Vehicle (#2) Information - shown for law enforcement, other vehicles, OR vehicle towed
+  const showOtherVehicleInfo = hasLawEnforcement || hasOtherVehicles || hasVehicleTowed
 
-  // Show Witness Information - shown for most event types except Dock Incident alone
-  // Per screenshots: Law enforcement, Illness/injury, Property damage, Other vehicles, Vehicle towed, Other
-  const showWitnessInfo = hasLawEnforcement || hasInjury || hasInjuriesToOthers ||
-    hasPropertyDamage || hasOtherVehicles || hasVehicleTowed || hasOther
+  // Show Witness Information - shown for ALL event types including Dock Incident
+  // Per screenshot: Dock Incident shows Witness Info
+  const showWitnessInfo = hasDockIncident || hasLawEnforcement || hasInjury || hasInjuriesToOthers ||
+    hasPropertyDamage || hasOtherVehicles || hasVehicleTowed || hasOther || hasDOTInspection || hasHazmat
 
   // Show Scene Conditions (Analysis) - for vehicle/accident related events
   // Per screenshots: Law enforcement, Other vehicles, Vehicle towed, Other, Property damage
@@ -214,14 +217,18 @@ const SafetyEvent = () => {
   const showSceneConditions = hasLawEnforcement || hasOtherVehicles || hasVehicleTowed ||
     hasOther || hasPropertyDamage
 
-  // Show Incident Description - shown for most event types
-  // Per screenshots: Law enforcement, Illness/injury, Other vehicles, Property damage, Vehicle towed, Other
-  const showIncidentDescription = hasLawEnforcement || hasInjury || hasInjuriesToOthers ||
+  // Show Incident Description - shown for ALL event types including Dock Incident
+  // Per screenshot: Dock Incident shows Incident Description
+  const showIncidentDescription = hasDockIncident || hasLawEnforcement || hasInjury || hasInjuriesToOthers ||
     hasOtherVehicles || hasPropertyDamage || hasVehicleTowed || hasOther || hasDOTInspection || hasHazmat
 
   // Show Event Evaluation section - only for injury events
-  // Per screenshots: Illness or injury to self
   const showEventEvaluation = hasInjury || hasInjuriesToOthers
+
+  // Show "Why did unsafe conditions/acts exist?" - only when unsafe conditions or acts are selected
+  const hasUnsafeConditionsSelected = Array.isArray(unsafeConditions) && unsafeConditions.length > 0
+  const hasUnsafeActsSelected = Array.isArray(unsafeActs) && unsafeActs.length > 0
+  const showWhyUnsafe = hasUnsafeConditionsSelected || hasUnsafeActsSelected
 
   const onSubmit = async (data) => {
     setIsSubmitting(true)
@@ -624,26 +631,6 @@ const SafetyEvent = () => {
                 errors={errors}
               />
             </div>
-            <h4 className="font-medium text-gray-700 mt-4 mb-2">Vehicle #2 Owner Information</h4>
-            <TextInput
-              label="Owner/Company Name"
-              name="vehicle2OwnerName"
-              register={register}
-              errors={errors}
-            />
-            <TextInput
-              label="Owner Phone Number"
-              name="vehicle2OwnerPhone"
-              type="tel"
-              register={register}
-              errors={errors}
-            />
-            <TextInput
-              label="Owner Street Address"
-              name="vehicle2OwnerStreet"
-              register={register}
-              errors={errors}
-            />
             <TextInput
               label="Insurance Company"
               name="vehicle2InsuranceCompany"
@@ -656,6 +643,37 @@ const SafetyEvent = () => {
               register={register}
               errors={errors}
             />
+            <RadioGroup
+              label="Is the driver the vehicle owner?"
+              name="isDriverOwner"
+              register={register}
+              errors={errors}
+              options={['Yes', 'No']}
+            />
+            {isDriverOwner === 'No' && (
+              <>
+                <h4 className="font-medium text-gray-700 mt-4 mb-2">Vehicle #2 Owner Information</h4>
+                <TextInput
+                  label="Owner/Company Name"
+                  name="vehicle2OwnerName"
+                  register={register}
+                  errors={errors}
+                />
+                <TextInput
+                  label="Owner Phone Number"
+                  name="vehicle2OwnerPhone"
+                  type="tel"
+                  register={register}
+                  errors={errors}
+                />
+                <TextInput
+                  label="Owner Street Address"
+                  name="vehicle2OwnerStreet"
+                  register={register}
+                  errors={errors}
+                />
+              </>
+            )}
           </FormSection>
         )}
 
@@ -1109,43 +1127,48 @@ const SafetyEvent = () => {
               register={register}
               options={UNSAFE_ACTS}
             />
-            <TextArea
-              label="Why did the unsafe conditions/acts exist?"
-              name="whyUnsafeExist"
-              register={register}
-              errors={errors}
-              rows={4}
-            />
-            <RadioGroup
-              label='Are there factors (such as "the job can be done more quickly" or "the product is less likely to be damaged") that may have encouraged the unsafe conditions or acts?'
-              name="factorsEncouraged"
-              register={register}
-              errors={errors}
-              options={['Yes', 'No']}
-            />
-            {factorsEncouraged === 'Yes' && (
-              <TextArea
-                label="Please describe"
-                name="factorsDescription"
-                register={register}
-                errors={errors}
-                rows={3}
-              />
+            {/* Show these fields only when unsafe conditions or acts are selected */}
+            {showWhyUnsafe && (
+              <>
+                <TextArea
+                  label="Why did the unsafe conditions/acts exist?"
+                  name="whyUnsafeExist"
+                  register={register}
+                  errors={errors}
+                  rows={4}
+                />
+                <RadioGroup
+                  label='Are there factors (such as "the job can be done more quickly" or "the product is less likely to be damaged") that may have encouraged the unsafe conditions or acts?'
+                  name="factorsEncouraged"
+                  register={register}
+                  errors={errors}
+                  options={['Yes', 'No']}
+                />
+                {factorsEncouraged === 'Yes' && (
+                  <TextArea
+                    label="Please describe"
+                    name="factorsDescription"
+                    register={register}
+                    errors={errors}
+                    rows={3}
+                  />
+                )}
+                <RadioGroup
+                  label="Were the unsafe acts or conditions reported prior to the event?"
+                  name="priorReported"
+                  register={register}
+                  errors={errors}
+                  options={['Yes', 'No', 'Unknown']}
+                />
+                <RadioGroup
+                  label="Have there been similar events or near misses prior to this one?"
+                  name="similarEventsPrior"
+                  register={register}
+                  errors={errors}
+                  options={['Yes', 'No', 'Unknown']}
+                />
+              </>
             )}
-            <RadioGroup
-              label="Were the unsafe acts or conditions reported prior to the event?"
-              name="priorReported"
-              register={register}
-              errors={errors}
-              options={['Yes', 'No', 'Unknown']}
-            />
-            <RadioGroup
-              label="Have there been similar events or near misses prior to this one?"
-              name="similarEventsPrior"
-              register={register}
-              errors={errors}
-              options={['Yes', 'No', 'Unknown']}
-            />
           </FormSection>
         )}
 
@@ -1162,6 +1185,12 @@ const SafetyEvent = () => {
             {soughtMedicalTreatment === 'Yes' && (
               <>
                 <TextInput
+                  label="Where did the employee go for treatment?"
+                  name="treatmentLocation"
+                  register={register}
+                  errors={errors}
+                />
+                <TextInput
                   label="Medical Facility Name"
                   name="medicalFacilityName"
                   register={register}
@@ -1175,6 +1204,28 @@ const SafetyEvent = () => {
                 />
               </>
             )}
+            {soughtMedicalTreatment === 'No' && (
+              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <h4 className="font-medium text-yellow-800 mb-2">Refusal of Medical Treatment:</h4>
+                <p className="text-yellow-700 text-sm">
+                  I have been advised by my supervisor/manager that I should seek medical attention
+                  for my injury. I understand that I have the right to seek medical treatment at any time.
+                  At this time, I am choosing to decline medical treatment.
+                </p>
+                <div className="mt-3">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      {...register('acknowledgedRefusal')}
+                      className="rounded border-gray-300 text-red-600 focus:ring-red-500"
+                    />
+                    <span className="text-sm text-yellow-800 font-medium">
+                      I acknowledge and understand the above statement
+                    </span>
+                  </label>
+                </div>
+              </div>
+            )}
             <RadioGroup
               label="Did the employee leave work due to the injury?"
               name="leftWorkDueToInjury"
@@ -1182,6 +1233,14 @@ const SafetyEvent = () => {
               errors={errors}
               options={['Yes', 'No']}
             />
+            {leftWorkDueToInjury === 'Yes' && (
+              <TextInput
+                label="When is the employee expected to return?"
+                name="expectedReturnDate"
+                register={register}
+                errors={errors}
+              />
+            )}
           </FormSection>
         )}
 
